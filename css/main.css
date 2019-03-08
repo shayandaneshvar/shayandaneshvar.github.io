@@ -1230,9 +1230,9 @@ header .logo a {
 /* dropdown nav */
 .main-navigation {
 	background: #000000;
-	padding: 24px 30px 42px;
+	padding: 24px 38px 20px;
 	margin: 0;
-	width: 100%;
+	width: 200%;
 	height: auto;
 	clear: both;
 	display: none;
