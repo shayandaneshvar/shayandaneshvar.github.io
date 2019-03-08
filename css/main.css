@@ -1099,7 +1099,7 @@ header .top-bar {
 	min-width: 80px;
 	min-height: 66px;
 	position: absolute;
-	left: 0px;
+	left: -120px;
 	top: 0;
 }
 header .logo {
