@@ -1099,7 +1099,7 @@ header .top-bar {
 	min-width: 80px;
 	min-height: 66px;
 	position: absolute;
-	left: -120px;
+	left: -384px;
 	top: 0;
 }
 header .logo {
@@ -1267,22 +1267,22 @@ header .logo a {
  */
 @media only screen and (max-width:1024px) {
 	header .top-bar {
-		left: 60px;
+		left: -30px;
 	}
 }
 @media only screen and (max-width:768px) {
 	header .top-bar {
-		left: 50px;
+		left: 0px;
 	}
 }
 @media only screen and (max-width:600px) {
 	header .top-bar {
-		left: 35px;
+		left: 0px;
 	}
 }
 @media only screen and (max-width:400px) {
 	header .top-bar {
-		left: 25px;
+		left: 0px;
 	}
 }
 
