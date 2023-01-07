@@ -227,6 +227,37 @@
                 <br>
             </div>
 
+            <div class="project" id="#">
+
+                <a href="https://github.com/shayandaneshvar/ComputerVision-Final-Project" target="_blank"
+                   style="font-size: large;"><strong>Soccer Player Detection, Classification, and Visualization</strong></a
+                > in 2021 (Computer Vision Course Project)<br/>
+                <a href="images/ComputerVisionCourseProject.jpg" target="_blank"><img class="img-responsive"
+                                                                     src="images/ComputerVisionCourseProject.jpg"
+                                                                     alt=""
+                                                                     title="Final Project of Computer Vision Course"></a>
+                <p>
+
+                    In this project, I had to detect, and classify soccer players and the referees, and finally draw them with 3 colors on an artificial soccer field.
+                    <br>
+                    In order to detect soccer players, I used KNN background subtraction algorithm alongside basic morphology techniques and the connected component algorithm. In order to classify them, I created a dataset of players and referees and trained a simple Convolutional Neural Network (CNN).
+                    The final model reached an accuracy of over 98%. The whole project was fast enough to detect, classify, and visualize players and referees in a smooth fashion (10 fps on a mid-range laptop).
+                    <br>
+                    <br>
+                    I also used a transform to get the exact location on a birds-eye view field. (I had to connect footage of three video cameras, and I chose to use a transform instead of creating a panorama image)
+                    <br>
+                    <br>
+                    In order to make calculations faster, I tried to use motion estimation algorithms, like optical flow, and skip a few frame on the original video, but it was not very successful. (So, the final code repository does not contain the code of this part!)
+
+                </p>
+                <hr style="margin-left: 0; margin-right: 0; height: 1px; width: 100%; border: 0; clear: both; display: block; background-image: linear-gradient(90deg, transparent, darkgray, transparent);">
+            </div>
+
+            <!--            TODO:-->
+            Linear Algebra project - face registration and PCA
+            <br>other github proj
+
+
             <!--            SAMPLE         -->
             <!--            <div class="project" id="#">-->
 
