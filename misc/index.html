@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!--
+    Plain-Academic by Vasilios Mavroudis
+    Released under the  Simplified BSD License/FreeBSD (2-clause) License.
+    https://github.com/mavroudisv/plain-academic
+-->
+
+<html lang="en">
+<head>
+    <title>Shayan Daneshvar</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <script src="https://kit.fontawesome.com/14add8d051.js" crossorigin="anonymous"></script>
+
+    <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.js"></script>
+    <link
+            href="https://fonts.googleapis.com/css?family=Oswald:700"
+            rel="stylesheet"
+            type="text/css"
+    />
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-inverse">
+    <div class="container">
+        <ul class="nav navbar-nav">
+            <li><a title="Home" href="../">Home</a></li>
+            <li><a title="Download CV" target="_blank" href="../files/CV_ShayanDaneshvar_Jan2023_1.pdf">Curriculum Vitae
+                (CV)</a></li>
+            <li><a title="Education" href="/#education">Education</a></li>
+            <li><a title="Experience" href="/#experience">Experience</a></li>
+            <li><a title="Publications" href="/#publication">Publication</a></li>
+            <li><a title="Projects" href="/#projects">Projects</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-10">
+            <h2 id="files">Extra Files</h2>
+            <ul>
+                <li class="paper">
+                    <a href="../files/toefl_report.pdf" target="_blank">
+                        TOEFL Report
+                    </a>
+                    Click to download!
+                </li>
+            </ul>
+            <ul>
+                <li class="paper">
+                    <a href="../files/#" target="_blank">
+                        Other Things
+                    </a>
+                    Will be added here! (last update: 8/Jan/2023)
+                </li>
+            </ul>
+        </div>
+    </div>
+
+
+</div>
+<br>
+<!-- /.container -->
+<button
+        type="button"
+        class="btn btn-floating btn-lg"
+        id="btn-back-to-top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+</body>
+<style>
+    #btn-back-to-top {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        display: none;
+        border-radius: 50%;
+    }
+</style>
+<script>
+    //Get the button
+    let mybutton = document.getElementById("btn-back-to-top");
+
+    // When the user scrolls down 20px from the top of the document, show the button
+    window.onscroll = function () {
+        scrollFunction();
+    };
+
+    function scrollFunction() {
+        if (
+            document.body.scrollTop > 50 ||
+            document.documentElement.scrollTop > 50
+        ) {
+            mybutton.style.display = "block";
+        } else {
+            mybutton.style.display = "none";
+        }
+    }
+
+    // When the user clicks on the button, scroll to the top of the document
+    mybutton.addEventListener("click", backToTop);
+
+    function backToTop() {
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+    }
+</script>
+</html>
