@@ -27,7 +27,7 @@
             type="text/css"
     />
 </head>
-<body>
+<body onload="updateLastModifiedDate()">
 <!-- Navigation -->
 <nav class="navbar navbar-inverse">
     <div class="container">
@@ -113,7 +113,10 @@
             <!--                <a href="https://scholar.google.com/citations?user=####&hl=en"-->
             <!--                   target="_blank">Google Scholar</a>-->
             <!--            </dd>-->
+            <br>
+            <small>This page was last updated at: <small id="modified">...</small></small>
         </div>
+
     </div>
 
     <div class="row">
@@ -362,7 +365,8 @@
                     I was responsible for the design, development, and deployment of the backend services, and one of my
                     friends was responsible for UI/UX design and development of the website.
                     Sadly, no sponsors were found and the project got cancelled. (So, if you are interested in the
-                    source code, just give me an email.) Services that got completed or reached the MVP: Video Service, Auth Service, and Quiz Service.
+                    source code, just give me an email.) Services that got completed or reached the MVP: Video Service,
+                    Auth Service, and Quiz Service.
                     <br>
                     Tech Stack:
                     <br>
@@ -377,53 +381,67 @@
                 <hr style="margin-left: 0; margin-right: 0; height: 1px; width: 100%; border: 0; clear: both; display: block; background-image: linear-gradient(90deg, transparent, darkgray, transparent);">
             </div>
 
-                        <div class="project" id="dapixi">
-                            <a href="https://dapixi.ir" target="_blank"
-                               style="font-size: large;"><strong>Dapixi Website <small> - Like Instagram and Pinterest Websites</small></strong></a
-                            > in 2020 (Software Engineering I (AKA System Design and Analysis) Course Project - 19.9 - A+)<br/>
+            <div class="project" id="dapixi">
+                <a href="https://dapixi.ir" target="_blank"
+                   style="font-size: large;"><strong>Dapixi Website <small> - Like Instagram and Pinterest
+                    Websites</small></strong></a
+                > in 2020 (Software Engineering I (AKA System Design and Analysis) Course Project - 19.9 - A+)<br/>
 
-                            <a href="images/dapixi.jpg" target="_blank"><img class="img-responsive"
-                                                                                 src="images/dapixi.jpg"
-                                                                                 alt=""
-                                                                                 title="SE1 course project pictures"></a>
-                            <br>
-                            <a href="images/dapixi-arch.jpg" target="_blank"><img class="img-responsive"
-                                                                             src="images/dapixi-arch.jpg"
-                                                                             alt=""
-                                                                             title="SE1 project Architecture and Diagram"></a>
-                            <p>
+                <a href="images/dapixi.jpg" target="_blank"><img class="img-responsive"
+                                                                 src="images/dapixi.jpg"
+                                                                 alt=""
+                                                                 title="SE1 course project pictures"></a>
+                <br>
+                <a href="images/dapixi-arch.jpg" target="_blank"><img class="img-responsive"
+                                                                      src="images/dapixi-arch.jpg"
+                                                                      alt=""
+                                                                      title="SE1 project Architecture and Diagram"></a>
+                <p>
 
-                                In this project, we could build any sort of software we wanted. Hence, three other people and I decided to build a photo sharing sort of website.
-                                I was responsible for the backend design, development, and deployment.
-                                <br>
-                                I also helped one of my friends develop two recommender systems for the website (A Categorical Filtering Recommender and A Collaborative Filtering Recommender).
-                                I also helped my frontend developer friends use Angular's Auth Guard and save JWT on user's local storage, and developed the login page.
-                                The project has a Microservices Architecture and is consisted of the following services: Auth(N/Z) and OAuth Service, User Service, Service Discovery Server, Gateway Service (Zuul v1), Photo Service, and an Externalized Configuration service.
-                                The backend code is over 12K Lines of Java code alongside over 2K lines of configurations, dockerfiles, etc.
-                                <br>
-                                <br>
-                                Technologies:
-                                <br>
-                                Frontend: Html, CSS, SASS, JS, TS, Angular 10, Angular Material, Bootstrap
-                                <br>
-                                Backend: Microservices Architecture, Java, Spring Boot, Spring MVC, Spring Data JPA, Spring Data Mongo, MongoDB, H2, Postgres, Docker, Maven, Spring Cloud (Eureka Discovery, Config Server, Zuul Gateway, Hystrix Circuit Breaker, Hystrix & Turbine Dashboard, Code Centric's Admin Panel, OpenFeign, Spring Cloud Security (OAuth2)), Spring Security OAuth2 Client, JWT, Spring Mail, Mockito, JUnit5, AssertJ, Swagger/OpenAPI 3, Rest API with Jackson.
-                                <br>
-                                Recommender System: Python 3, Sci-kit Learn, Pandas, Numpy.
-                                Deployment: Nginx, Docker-Compose, Ubuntu 18.04
-                                <br>
-                                <br>
-                                <br>
-                                <small>The website is still up and running, but a little slow as it is deployed on very cheap slow servers in Iran! (Over 2 Years Now!)</small>
-                                <br>
-                                <small>Source Code is private due to some important credentials, like email access, database passwords, Oauth tokens, etc. But, I am willing to share other parts. Send an Email, if you are interested!</small>
-                                <br>
-                            </p>
-                            <hr style="margin-left: 0; margin-right: 0; height: 1px; width: 100%; border: 0; clear: both; display: block; background-image: linear-gradient(90deg, transparent, darkgray, transparent);">
-                        </div>
+                    In this project, we could build any sort of software we wanted. Hence, three other people and I
+                    decided to build a photo sharing sort of website.
+                    I was responsible for the backend design, development, and deployment.
+                    <br>
+                    I also helped one of my friends develop two recommender systems for the website (A Categorical
+                    Filtering Recommender and A Collaborative Filtering Recommender).
+                    I also helped my frontend developer friends use Angular's Auth Guard and save JWT on user's local
+                    storage, and developed the login page.
+                    The project has a Microservices Architecture and is consisted of the following services: Auth(N/Z)
+                    and OAuth Service, User Service, Service Discovery Server, Gateway Service (Zuul v1), Photo Service,
+                    and an Externalized Configuration service.
+                    The backend code is over 12K Lines of Java code alongside over 2K lines of configurations,
+                    dockerfiles, etc.
+                    <br>
+                    <br>
+                    Technologies:
+                    <br>
+                    Frontend: Html, CSS, SASS, JS, TS, Angular 10, Angular Material, Bootstrap
+                    <br>
+                    Backend: Microservices Architecture, Java, Spring Boot, Spring MVC, Spring Data JPA, Spring Data
+                    Mongo, MongoDB, H2, Postgres, Docker, Maven, Spring Cloud (Eureka Discovery, Config Server, Zuul
+                    Gateway, Hystrix Circuit Breaker, Hystrix & Turbine Dashboard, Code Centric's Admin Panel,
+                    OpenFeign, Spring Cloud Security (OAuth2)), Spring Security OAuth2 Client, JWT, Spring Mail,
+                    Mockito, JUnit5, AssertJ, Swagger/OpenAPI 3, Rest API with Jackson.
+                    <br>
+                    Recommender System: Python 3, Sci-kit Learn, Pandas, Numpy.
+                    Deployment: Nginx, Docker-Compose, Ubuntu 18.04
+                    <br>
+                    <br>
+                    <br>
+                    <small>The website is still up and running, but a little slow as it is deployed on very cheap slow
+                        servers in Iran! (Over 2 Years Now!)</small>
+                    <br>
+                    <small>Source Code is private due to some important credentials, like email access, database
+                        passwords, Oauth tokens, etc. But, I am willing to share other parts. Send an Email, if you are
+                        interested!</small>
+                    <br>
+                </p>
+                <hr style="margin-left: 0; margin-right: 0; height: 1px; width: 100%; border: 0; clear: both; display: block; background-image: linear-gradient(90deg, transparent, darkgray, transparent);">
+            </div>
 
 
             <!--            TODO:-->
-<!--            <br>Simple Http server, Algo projects, Huffman, LinkedIn complete Mahsan-->
+            <!--            <br>Simple Http server, Algo projects, Huffman, LinkedIn complete Mahsan-->
 
             <!--            SAMPLE         -->
 
@@ -455,7 +473,8 @@
 
     <div class="col md-10">
         <br/>
-        <strong>Note:</strong> I haven't included most of my project here, feel free to take a look at my Github where over 90% of the projects that I did are available. (But mostly without a documentation or a README!)
+        <strong>Note:</strong> I haven't included most of my project here, feel free to take a look at my Github where
+        over 90% of the projects that I did are available. (But mostly without a documentation or a README!)
         <br/>
     </div>
 </div>
@@ -503,6 +522,11 @@
     function backToTop() {
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
+    }
+
+
+    function updateLastModifiedDate() {
+        document.getElementById("modified").innerHTML = document.lastModified;
     }
 </script>
 </html>
