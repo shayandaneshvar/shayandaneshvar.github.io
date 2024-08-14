@@ -49,8 +49,14 @@
         <!-- Entries Column -->
         <div class="col-md-8">
             <!-- Main Image -->
-            <img alt="" class="img-responsive" src="photo.jpg"
-                 title="a photo of me holding a pothos plant and my former colleagues!"/><br/>
+            <div class="image-slider, image-responsive">
+                <img id="image1" alt="" class="img-responsive" src="photo.jpg"
+                     title="a photo of me holding a pothos plant and my former colleagues!"/>
+                <img id="image2" alt="" class="img-responsive" src="photo3.jpg"
+                     title="a photo of me presenting a lab member's paper!"/>
+<!--                <br/>-->
+            </div>
+
 
             <div style="margin-top: 3%; text-align: justify">
                 <p>
@@ -86,9 +92,9 @@
         <!-- Contact Info on the Sidebar -->
         <div class="col-md-4">
             <div style="font-family: 'Oswald', sans-serif; font-size: 32px">
-                <b>(Seyed) Shayan Daneshvar</b>
+                <b>Shay Daneshvar</b>
             </div>
-
+            <i><small>Publish under Seyed Shayan Daneshvar</small></i>
             <br/>
             <p>
                 <b>daneshvarshayan [at] gmail [dot] com</b><br/>
@@ -117,7 +123,7 @@
 <!--                <a href="https://scholar.google.ca/citations?hl=en&user=NVHzLg0AAAAJ" target="_blank">Google Scholar</a>-->
 <!--            </dd>-->
             <br>
-            <small>This page was last updated at: <small id="modified">...</small></small>
+            <small>Last updated at: <small id="modified">...</small></small>
         </div>
 
     </div>
@@ -600,6 +606,22 @@
 </button>
 </body>
 <style>
+    .image-slider {
+        position: relative;
+        width: 100%;
+        height: auto; /* Adjust based on your image dimensions */
+    }
+
+    .image-slider img {
+        position: absolute;
+        width: 100%;
+        height: auto;
+        transition: opacity 1s ease-in-out;
+    }
+
+    #image2 {
+        height: 0;
+    }
     #btn-back-to-top {
         position: fixed;
         bottom: 1rem;
@@ -641,6 +663,18 @@
         document.getElementById("modified").innerHTML = document.lastModified;
     }
 
+
+    let currentIndex = 0;
+    const images = [document.querySelectorAll('#image1')[0], document.querySelectorAll("#image2")[0]];
+
+    function switchImage() {
+        images[currentIndex].style.height = 0;
+        console.log(images.length)
+        currentIndex = (currentIndex + 1) % images.length;
+        images[currentIndex].style.height = 'auto';
+    }
+
+    setInterval(switchImage, 10000); // Change image every 3 seconds
 </script>
 <script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"/>
 </html>
