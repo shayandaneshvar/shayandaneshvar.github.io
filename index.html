@@ -54,6 +54,8 @@
                      title="a photo of me holding a pothos plant and my former colleagues!"/>
                 <img id="image2" alt="" class="img-responsive" src="photo3.jpg"
                      title="a photo of me presenting a lab member's paper!"/>
+                <img id="image3" alt="" class="img-responsive" src="photo2.jpg"
+                     title="a photo of me and two friends at UManitoba!"/>
 <!--                <br/>-->
             </div>
 
@@ -155,10 +157,11 @@
             <h2 id="experience">Experience</h2>
             <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="large" data-theme="light" data-type="HORIZONTAL" data-vanity="seyed-shayan-daneshvar-8b113993" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://ca.linkedin.com/in/seyed-shayan-daneshvar-8b113993?trk=profile-badge"></a></div>
 
-            <strong>I have written all positions I have held on my <a
-                    href="https://ca.linkedin.com/in/seyed-shayan-d-8b113993?trk=people-guest_people_search-card">LinkedIn page</a>, so I
-                encourage you to take a look at my LinkedIn page to see all the activities and job titles that I have
-                held plus some information that I have not written here!</strong>
+            <strong>Please see my <a
+                    href="https://ca.linkedin.com/in/seyed-shayan-d-8b113993?trk=people-guest_people_search-card">LinkedIn page</a> to see the details of roles I held in the past.
+            Also, my <a href="files/CV_Aug2024.pdf">CV</a> contains a summarized version. </strong>
+
+
 
             <!-- Hope You did not use inspect! I have removed all my previous positions, so I will only have to update my resume and LinkedIn page!      -->
             <!--            <strong>Java Software Engineer Sr.</strong><br/>-->
@@ -219,8 +222,7 @@
         <div class="col-md-12">
 
             <h2 id="projects">Projects</h2>
-            <h5>Over the past years I have done various projects in different fields ranging from Enterprise Software
-                Engineering and Web Development to Machine Learning & Computer Vision.</h5>
+            <h5>Over the past years I have done various projects in different fields ranging from Enterprise Web Development & Software Engineering to Machine/Deep Learning & Computer Vision.</h5>
             <h5>Here are some of those projects: </h5>
             <h6>(I try to update the list and add the previous ones, this list is incomplete at the time!)</h6>
             <br>
@@ -619,7 +621,7 @@
         transition: opacity 1s ease-in-out;
     }
 
-    #image2 {
+    #image2,#image3 {
         height: 0;
     }
     #btn-back-to-top {
@@ -665,7 +667,7 @@
 
 
     let currentIndex = 0;
-    const images = [document.querySelectorAll('#image1')[0], document.querySelectorAll("#image2")[0]];
+    const images = [document.querySelectorAll('#image1')[0], document.querySelectorAll("#image2")[0], document.querySelectorAll("#image3")[0]];
 
     function switchImage() {
         images[currentIndex].style.height = 0;
