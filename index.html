@@ -640,6 +640,16 @@
     }
 </style>
 <script>
+    // remove extra # for people coming from the latex resume
+      // Fix double hash in URL (e.g., ## -> #)
+        window.addEventListener('load', function () {
+        const url = window.location.href;
+        const correctedUrl = url.replace(/#{2,}/g, '#');
+        if (correctedUrl !== url) {
+            window.location.replace(correctedUrl);
+        }
+    });
+    
     //Get the button
     let mybutton = document.getElementById("btn-back-to-top");
 
