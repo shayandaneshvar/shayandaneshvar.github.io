@@ -156,7 +156,7 @@
 
             <strong>BSc in Computer Engineering </strong>(Focused on Machine Learning, Computer Vision & Software Engineering)<br/>
             <p>
-                K. N. Toosi University of Technology (Sep 2018 – Aug 2022, Tehran, Iran)<br/>
+                K. N. Toosi University of Technology (Sep 2018 – July 2022, Tehran, Iran)<br/>
                 GPA: 19.21/20 - (US CGPA: 4/4 - A+) <br/>
                 Thesis: Reflection Removal of In-vehicle Images (19.5/20) - Supervisor: Dr. Behrooz Nasihatkon<br/>
             </p>
@@ -651,6 +651,20 @@
     }
 </style>
 <script>
+
+    // remove extra # for people coming from the latex resume
+    // Fix double hash in URL (e.g., ## -> #)
+    window.addEventListener('load', function () {
+        let url = window.location.href;
+
+        // Replace double or more hashes with a single hash in the URL
+        const correctedUrl = url.replace(/#{2,}/g, '#');
+
+        // If the URL has changed, reload the page with the updated URL
+        if (correctedUrl !== url) {
+            window.location.href = correctedUrl;
+        }
+    });
     //Get the button
     let mybutton = document.getElementById("btn-back-to-top");
 
