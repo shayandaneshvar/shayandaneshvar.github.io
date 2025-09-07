@@ -167,7 +167,7 @@
     <div class="row">
         <div class="col-md-10">
             <h2 id="experience">Experience</h2>
-            <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="large" data-theme="light" data-type="HORIZONTAL" data-vanity="seyed-shayan-daneshvar-8b113993" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://ca.linkedin.com/in/shayanda?trk=profile-badge"></a></div>
+            <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="large" data-theme="light" data-type="HORIZONTAL" data-vanity="shayanda" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://ca.linkedin.com/in/shayanda?trk=profile-badge"></a></div>
 
             <strong>Please see my <a
                     href="https://ca.linkedin.com/in/shayanda?trk=people-guest_people_search-card">LinkedIn page</a> to see the details of roles I held in the past.
@@ -651,7 +651,6 @@
     }
 </style>
 <script>
-
     // remove extra # for people coming from the latex resume
     // Fix double hash in URL (e.g., ## -> #)
     window.addEventListener('load', function () {
@@ -659,11 +658,14 @@
 
         // Replace double or more hashes with a single hash in the URL
         const correctedUrl = url.replace(/#{2,}/g, '#');
+        console.log(url)
+        console.log(correctedUrl)
 
         // If the URL has changed, reload the page with the updated URL
         if (correctedUrl !== url) {
             window.location.href = correctedUrl;
         }
+        console.log("shit")
     });
     //Get the button
     let mybutton = document.getElementById("btn-back-to-top");
