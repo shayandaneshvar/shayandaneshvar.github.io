@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 
 const navLinks = [
-  { label: 'About', href: '#about' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Education', href: '#education' },
-  { label: 'Publications', href: '#publications' },
-  { label: 'Projects', href: '#projects' },
-  { label: 'Blog', href: '#blog' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'About', section: 'about' },
+  { label: 'Experience', section: 'experience' },
+  { label: 'Education', section: 'education' },
+  { label: 'Publications', section: 'publications' },
+  { label: 'Projects', section: 'projects' },
+  { label: 'Blog', section: 'blog' },
+  { label: 'Contact', section: 'contact' },
 ]
+
+function scrollTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+}
 
 function SunIcon() {
   return (
@@ -52,27 +57,27 @@ export default function Nav() {
         className="fixed top-0 z-50 w-full px-6 md:px-12 transition-all duration-300 backdrop-blur-md border-b"
       >
         <nav className="flex items-center justify-between h-16 md:h-20 max-w-[1000px] mx-auto">
-          <a
-            href="#"
+          <Link
+            to="/"
             style={{ color: 'var(--accent)' }}
             className="font-mono text-xl font-bold tracking-wider hover:opacity-70 transition-opacity"
           >
             SD
-          </a>
+          </Link>
 
           <ol className="hidden md:flex items-center gap-8 list-none m-0 p-0">
-            {navLinks.map(({ label, href }, i) => (
+            {navLinks.map(({ label, section }, i) => (
               <li key={label}>
-                <motion.a
+                <motion.button
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * i + 0.3 }}
-                  href={href}
+                  onClick={() => scrollTo(section)}
                   style={{ color: 'var(--text-bright)' }}
                   className="text-sm hover:opacity-70 transition-opacity"
                 >
                   {label}
-                </motion.a>
+                </motion.button>
               </li>
             ))}
 
@@ -142,16 +147,15 @@ export default function Nav() {
             className="fixed inset-y-0 right-0 z-40 w-3/4 flex flex-col items-center justify-center shadow-2xl border-l md:hidden"
           >
             <ol className="flex flex-col items-center gap-8 list-none m-0 p-0">
-              {navLinks.map(({ label, href }) => (
+              {navLinks.map(({ label, section }) => (
                 <li key={label}>
-                  <a
-                    href={href}
-                    onClick={() => setMenuOpen(false)}
+                  <button
+                    onClick={() => { scrollTo(section); setMenuOpen(false) }}
                     style={{ color: 'var(--text-bright)' }}
                     className="text-lg hover:opacity-70 transition-opacity"
                   >
                     {label}
-                  </a>
+                  </button>
                 </li>
               ))}
               <li>

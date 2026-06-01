@@ -62,20 +62,20 @@ export default function Hero() {
       </motion.p>
 
       <motion.div {...fadeUp(0.5)} className="flex gap-4 mt-10 flex-wrap">
-        <a
-          href="#projects"
+        <button
+          onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
           style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
           className="font-mono border px-7 py-4 rounded text-sm hover:opacity-80 transition-all duration-300 hover:-translate-y-0.5"
         >
           See My Work
-        </a>
-        <a
-          href="#contact"
+        </button>
+        <button
+          onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
           style={{ color: 'var(--text)', borderColor: 'var(--border)' }}
           className="font-mono border px-7 py-4 rounded text-sm hover:opacity-80 transition-all duration-300 hover:-translate-y-0.5"
         >
           Get In Touch
-        </a>
+        </button>
       </motion.div>
 
       {/* Social sidebar */}
