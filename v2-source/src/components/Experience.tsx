@@ -17,7 +17,7 @@ const jobs = [
     ],
   },
   {
-    company: 'MacDon (FT)',
+    company: 'MacDon',
     title: 'Machine Learning Engineer',
     org: 'MacDon Industries',
     location: 'Winnipeg, Canada',
@@ -66,6 +66,28 @@ const jobs = [
       'Refactored and contributed 16K+ lines in hybrid Java/Kotlin web services, modularizing APIs and simplifying security by replacing the legacy Session/JWT system with Spring Cloud Security OAuth modules',
       'Developed and maintained e-wallet and trading platforms providing banking APIs to internal and external services, reducing technical debt through large-scale refactoring and replacing jQuery with native JS APIs',
       'Built event-driven workflows using Spring and Kafka for chat, notifications, and shopping services serving 2K+ concurrent users',
+    ],
+  },
+  {
+    company: 'Mapsa',
+    title: 'Java Web Development Instructor',
+    org: 'Mapsa HR and Training',
+    location: 'Tehran, Iran',
+    range: 'Jan 2020 – May 2021',
+    bullets: [
+      'Taught core and advanced Java programming including OOP, SQL, Data Structures, Concurrency, and Algorithms',
+      'Delivered practical hands-on training and mentorship in Spring Boot, Spring MVC, JPA, Docker, and REST APIs',
+    ],
+  },
+  {
+    company: 'Mapsa (Intern)',
+    title: 'Java Backend Developer Intern',
+    org: 'Mapsa HR and Training',
+    location: 'Tehran, Iran',
+    range: 'Jun 2019 – Sep 2019',
+    bullets: [
+      'Collaborated with team members following Scrum practices to prototype, develop, and deploy apps on the cloud',
+      'Gained practical experience in Java development, Agile, industry standards, and best practices in a team setting',
     ],
   },
 ]

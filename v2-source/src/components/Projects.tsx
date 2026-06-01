@@ -167,10 +167,7 @@ export default function Projects() {
             >
               <div className={`md:col-span-7 relative group rounded overflow-hidden ${i % 2 === 1 ? 'md:[direction:ltr]' : ''}`}>
                 {p.image ? (
-                  <>
-                    <div style={{ backgroundColor: 'var(--accent-20)' }} className="absolute inset-0 group-hover:bg-transparent transition-all duration-300 z-10" />
-                    <img src={p.image} alt={p.title} className="w-full h-56 md:h-72 object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                  </>
+                  <img src={p.image} alt={p.title} className="w-full h-56 md:h-72 object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                 ) : (
                   <div style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }} className="border rounded h-56 md:h-72 flex items-center justify-center">
                     <span style={{ color: 'var(--accent)', opacity: 0.2 }} className="font-mono text-6xl font-bold">{String(i + 1).padStart(2, '0')}</span>

@@ -68,7 +68,6 @@ export default function About() {
                 alt="Shay Daneshvar"
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.02]"
               />
-              <div style={{ backgroundColor: 'var(--accent-20)' }} className="absolute inset-0 group-hover:bg-transparent transition-all duration-300" />
             </div>
           </div>
         </div>
