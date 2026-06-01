@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "Fira Code", "Fira Mono", "Courier New", monospace;
+  --font-sans: "Inter", "SF Pro Text", -apple-system, system-ui, sans-serif;
+}
+
+/* Dark theme (default) */
+:root {
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --surface-2:    #21262d;
+  --border:       #30363d;
+  --border-soft:  #21262d;
+  --accent:       #58a6ff;
+  --accent-5:     rgba(88, 166, 255, 0.05);
+  --accent-8:     rgba(88, 166, 255, 0.08);
+  --accent-10:    rgba(88, 166, 255, 0.10);
+  --accent-20:    rgba(88, 166, 255, 0.20);
+  --accent-40:    rgba(88, 166, 255, 0.40);
+  --accent-shadow: rgba(88, 166, 255, 0.07);
+  --text-bright:  #e6edf3;
+  --text:         #8b949e;
+  --text-muted:   #6e7681;
+  --nav-bg:       rgba(13, 17, 23, 0.90);
+  --scrollbar:    #30363d;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg:           #f5f7ff;
+  --surface:      #ffffff;
+  --surface-2:    #eef1fb;
+  --border:       #dde3f0;
+  --border-soft:  #e8ecf8;
+  --accent:       #2563eb;
+  --accent-5:     rgba(37, 99, 235, 0.05);
+  --accent-8:     rgba(37, 99, 235, 0.08);
+  --accent-10:    rgba(37, 99, 235, 0.10);
+  --accent-20:    rgba(37, 99, 235, 0.20);
+  --accent-40:    rgba(37, 99, 235, 0.40);
+  --accent-shadow: rgba(37, 99, 235, 0.10);
+  --text-bright:  #111827;
+  --text:         #4b5563;
+  --text-muted:   #9ca3af;
+  --nav-bg:       rgba(245, 247, 255, 0.92);
+  --scrollbar:    #dde3f0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+}
+
+::selection {
+  background-color: var(--accent-20);
+  color: var(--text-bright);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
