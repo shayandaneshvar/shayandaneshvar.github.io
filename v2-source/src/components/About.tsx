@@ -1,5 +1,5 @@
-import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
 import SectionHeading from './SectionHeading'
 
 const skills = [
@@ -9,9 +9,19 @@ const skills = [
   'AWS EC2', 'Java',
 ]
 
+const photos = ['/photo1.jpg', '/photo4.jpg']
+
 export default function About() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-100px' })
+  const [photoIndex, setPhotoIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhotoIndex(i => (i + 1) % photos.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <section id="about" className="py-24" ref={ref}>
@@ -63,11 +73,18 @@ export default function About() {
           <div className="relative group mx-auto md:mx-0 w-64 h-64 md:w-full md:h-auto md:aspect-square max-w-xs">
             <div style={{ borderColor: 'var(--accent)' }} className="absolute inset-0 border-2 rounded translate-x-4 translate-y-4 group-hover:translate-x-3 group-hover:translate-y-3 transition-transform duration-300 z-0" />
             <div className="relative z-10 rounded overflow-hidden w-full h-full">
-              <img
-                src="/photo1.jpg"
-                alt="Shay Daneshvar"
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.02]"
-              />
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={photoIndex}
+                  src={photos[photoIndex]}
+                  alt="Shay Daneshvar"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-[filter,transform] duration-500 group-hover:scale-[1.02]"
+                />
+              </AnimatePresence>
             </div>
           </div>
         </div>
