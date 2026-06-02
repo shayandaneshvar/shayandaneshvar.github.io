@@ -498,9 +498,17 @@ out    = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`} />
             colorFn={colors.attn} />
         </div>
         <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Only the lower triangle is reachable. Position i can only attend to positions
-          0 through i. The upper triangle is masked to -inf before softmax, so those
-          weights come out as exactly 0.
+          Row i = the attention distribution for token i. It can only look at tokens
+          0 through i (itself and everything before it). Tokens after i are set to
+          -inf before softmax, which makes their weights exactly 0. This is what makes
+          the model autoregressive: during generation, token i has no way to see what
+          comes next.
+        </p>
+        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          Output shape: attn @ V = (B, n_heads, T, T) @ (B, n_heads, T, d_head)
+          = (B, n_heads, T, d_head). Each token gets a d_head-dimensional vector
+          that is a weighted mix of the value vectors of every token it attended to.
+          The heads are then concatenated and projected: (B, T, d_model).
         </p>
       </div>
     </PanelCard>
