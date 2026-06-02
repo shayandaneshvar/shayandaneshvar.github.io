@@ -442,7 +442,8 @@ function AttnPanel({ attnType, tokens, weightsPerHead, layerIdx }: {
       </Formula>
       <CodeBlock code={attnType === 'mha'
         ? `# H: (batch, seq_len, d_model) from previous step
-d_head = d_model // n_heads   # e.g. 4096 // 32 = 128
+B, T, _ = H.shape   # B = batch size, T = seq_len (number of tokens)
+d_head   = d_model // n_heads   # e.g. 4096 // 32 = 128
 
 Q = H @ W_q   # (B, T, d_model)
 K = H @ W_k
@@ -465,6 +466,7 @@ out  = attn @ V                        # (B, n_heads, T, d_head)
 # merge heads and project
 out = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`
         : `# GQA: same as MHA except K and V use fewer heads
+B, T, _ = H.shape   # B = batch size, T = seq_len (number of tokens)
 d_head   = d_model // n_heads      # same head size
 n_kv     = n_kv_heads              # e.g. 8 instead of 32
 
