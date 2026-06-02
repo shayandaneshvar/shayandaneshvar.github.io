@@ -499,10 +499,11 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
     <PanelCard title="Token Embedding">
       <Info>
         Before any of this, raw text is split into subword pieces by a tokenizer (usually
-        BPE or SentencePiece). "unbelievable" might become ["un", "believ", "able"]; the
-        word "cat" is likely one piece. The vocabulary is these subword types, typically
-        32K–150K entries. Each token ID then indexes into a learned embedding matrix to
-        get a dense vector of dimension d_model.
+        BPE or SentencePiece). "unbelievable" might become ["un", "believ", "able"]; "cat"
+        is likely one piece. The vocabulary is the full set of these subword types, typically
+        32K–150K entries, each assigned an integer ID. The embedding matrix is just a table:
+        one row per vocabulary entry. Looking up a token is grabbing its row — that row is
+        the vector the model uses to represent it.
       </Info>
       <Formula>
         text → BPE tokenizer → [id₀, id₁, ..., idₙ]<br />
