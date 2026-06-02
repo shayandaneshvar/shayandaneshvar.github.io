@@ -11,11 +11,14 @@ interface Config {
 }
 
 const PRESETS: Config[] = [
-  { name: 'This diagram', paramsB: 0.001, nLayers: 2, dModel: 32, nHeads: 4, nKvHeads: 2, seqLen: 6 },
-  { name: 'GPT-2 Small', paramsB: 0.117, nLayers: 12, dModel: 768, nHeads: 12, nKvHeads: 12, seqLen: 1024 },
-  { name: 'Llama 3 8B', paramsB: 8, nLayers: 32, dModel: 4096, nHeads: 32, nKvHeads: 8, seqLen: 8192 },
-  { name: 'Llama 3 70B', paramsB: 70, nLayers: 80, dModel: 8192, nHeads: 64, nKvHeads: 8, seqLen: 8192 },
-  { name: 'Llama 3 405B', paramsB: 405, nLayers: 126, dModel: 16384, nHeads: 128, nKvHeads: 8, seqLen: 8192 },
+  { name: 'This diagram', paramsB: 0.001, nLayers: 2,   dModel: 32,    nHeads: 4,   nKvHeads: 2,  seqLen: 6 },
+  { name: 'GPT-2 Small',  paramsB: 0.117, nLayers: 12,  dModel: 768,   nHeads: 12,  nKvHeads: 12, seqLen: 1024 },
+  { name: 'Llama 3 8B',   paramsB: 8,     nLayers: 32,  dModel: 4096,  nHeads: 32,  nKvHeads: 8,  seqLen: 8192 },
+  { name: 'Llama 3 70B',  paramsB: 70,    nLayers: 80,  dModel: 8192,  nHeads: 64,  nKvHeads: 8,  seqLen: 8192 },
+  { name: 'Llama 3 405B', paramsB: 405,   nLayers: 126, dModel: 16384, nHeads: 128, nKvHeads: 8,  seqLen: 8192 },
+  // Qwen2.5: hidden=5120, q_heads=40, kv_heads=8, d_head=128
+  { name: 'Qwen2.5 14B',  paramsB: 14.7,  nLayers: 48,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 8192 },
+  { name: 'Qwen2.5 32B',  paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 8192 },
 ]
 
 function fmt(bytes: number): string {
