@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import TransformerViz from '../components/transformer/TransformerViz'
+import MemoryCalc from '../components/transformer/MemoryCalc'
 
 export default function BlogTransformerViz() {
   return (
@@ -45,6 +46,51 @@ export default function BlogTransformerViz() {
 
         {/* Visualizer */}
         <TransformerViz />
+
+        {/* KV Cache */}
+        <div className="mt-16 pt-10 border-t" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-bright)' }}>KV Cache</h2>
+          <div className="space-y-4 max-w-2xl">
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              At each generation step, self-attention needs the K and V vectors for every token
+              that came before. Without caching, you recompute them all from scratch on every
+              step — so generating token 512 recomputes K and V for tokens 0 through 511. That
+              is quadratic in the number of generated tokens.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              The KV cache avoids this by storing K and V from every previous step. When
+              generating token t+1, you compute Q, K, V only for the new token, append the
+              new K and V to the cache, and attend over the full cached sequence. Compute
+              per step is now constant. The trade-off is memory: the cache grows by one row
+              per layer per step, so longer contexts cost more VRAM.
+            </p>
+            <div className="font-mono text-xs px-4 py-3 rounded border leading-relaxed"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', color: 'var(--accent)' }}>
+              KV cache size = n_layers × 2 (K and V) × seq_len × n_kv_heads × d_head × 2 bytes<br />
+              <br />
+              per token = n_layers × 2 × n_kv_heads × d_head × 2 bytes<br />
+              <span style={{ color: 'var(--text-muted)' }}>
+                Llama 3 8B: 32 × 2 × 8 × 128 × 2 = 131 KB per token → 1 GB at 8K context
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              This is precisely why GQA exists. With 32 Q heads but only 8 KV heads, the cache
+              is 4x smaller than MHA with no meaningful quality loss. At 128K context windows
+              the difference is tens of gigabytes.
+            </p>
+          </div>
+        </div>
+
+        {/* Memory Calculator */}
+        <div className="mt-12 pt-10 border-t" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-bright)' }}>Memory Requirements</h2>
+          <p className="text-sm leading-relaxed mb-8 max-w-2xl" style={{ color: 'var(--text)' }}>
+            How much GPU memory a model actually needs. Starts with the toy model from the
+            diagram above — switch presets to see real numbers. FP16 weights throughout;
+            training uses mixed precision with FP32 master weights and AdamW optimizer states.
+          </p>
+          <MemoryCalc />
+        </div>
 
         {/* Notes */}
         <div className="mt-16 pt-10 border-t space-y-4 max-w-2xl" style={{ borderColor: 'var(--border)' }}>
