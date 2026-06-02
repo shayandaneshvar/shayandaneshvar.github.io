@@ -606,33 +606,51 @@ function LMHeadPanel() {
           logits: (B, T, vocab_size)
         </div>
       </div>
-      <div>
-        <p className="font-mono text-xs mb-2 mt-2" style={{ color: 'var(--text-muted)' }}>Training: cross-entropy loss</p>
+      <div className="space-y-3">
+        <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Training: cross-entropy loss</p>
         <Info>
-          During training you have the ground truth next token at every position.
-          The loss measures how much probability the model assigned to the correct token.
-          It is computed over all T positions in parallel, which is why teacher forcing
-          (feeding the real tokens as input regardless of what the model predicted) is used.
+          The training data is a sequence of tokens. You split it so the input is every
+          token except the last, and the target is every token except the first — a shift
+          of one position. One forward pass through the model then produces T predictions
+          at once, because the causal mask ensures position t only sees x₀ through xₜ.
+          You do not run T separate forward passes.
+        </Info>
+        <CodeBlock code={`# raw sequence: ["The", "cat", "sat", "on", "the", "mat"]
+# token ids:  [  464, 3797, 3332,  319,  262, 2603]
+
+inputs  = tokens[:, :-1]   # (B, T)  [464, 3797, 3332, 319,  262]
+targets = tokens[:, 1:]    # (B, T)  [3797, 3332,  319, 262, 2603]
+#                                     ↑ each target is the next token`} />
+        <Info>
+          After one forward pass, logits has shape (B, T, vocab_size). Position t's
+          logits were produced using only x₀...xₜ as context (causal mask), so they
+          represent a valid prediction for xₜ₊₁. The loss at position t is how
+          surprised the model was by the true next token:
         </Info>
         <Formula>
-          loss = -log(softmax(logits)[true_token_id])<br />
-          averaged over all positions and batch items<br />
+          loss_t = -log p(xₜ₊₁ | x₀...xₜ)<br />
+                 = -log softmax(logits_t)[id of xₜ₊₁]<br />
           <br />
-          L = -1/(B·T) · Σ log p(xₜ₊₁ | x₀...xₜ)
+          L = (1 / B·T) · Σ_b Σ_t loss_t(b)<br />
+          <br />
+          sum over all T positions AND all B sequences, then divide.
+          one backward pass applies gradients to the whole model at once.
         </Formula>
-        <CodeBlock code={`# logits: (B, T, vocab_size)
-# targets: (B, T)  — the actual next token at each position
+        <CodeBlock code={`logits = model(inputs)   # (B, T, vocab_size) — one forward pass
 
+# flatten batch and time into one dimension,
+# then compute cross-entropy at every position simultaneously
 loss = F.cross_entropy(
-    logits.view(B * T, vocab_size),
-    targets.view(B * T),
+    logits.view(B * T, vocab_size),   # (B*T, vocab_size)
+    targets.view(B * T),              # (B*T,)
+    reduction='mean',                 # sum over all B*T, divide by B*T
 )
-# F.cross_entropy = softmax + negative log likelihood in one step
-# gradients flow back through every layer including the embedding matrix`} />
-        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Inference: only the last position's logits are used. Temperature is applied,
-          then a sampling strategy (greedy, top-k, top-p) picks the next token.
-          That token is appended to the input and the process repeats.
+
+loss.backward()   # one backward pass, updates every parameter`} />
+        <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+          Inference: no targets, no loss. Only the logits at the last position are
+          used. Temperature is applied, a sampling strategy picks the next token,
+          that token is appended to the input, and the loop repeats.
         </p>
       </div>
     </PanelCard>
