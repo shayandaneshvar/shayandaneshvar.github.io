@@ -10,7 +10,7 @@ export default function BlogTransformerViz() {
       <main className="mx-auto max-w-[1200px] px-6 md:px-12 pt-28 pb-24">
 
         {/* Breadcrumb */}
-        <Link to="/#blog" className="font-mono text-sm inline-flex items-center gap-2 mb-8 hover:opacity-70 transition-opacity"
+        <Link to="/" className="font-mono text-sm inline-flex items-center gap-2 mb-8 hover:opacity-70 transition-opacity"
           style={{ color: 'var(--text-muted)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
