@@ -511,7 +511,9 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
       </Formula>
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          Token → integer ID → row lookup in E (d_model = {D_MODEL} here, 4096–8192 in real models):
+          Token → integer ID → row lookup in E. The matrix has V rows (one per vocab entry)
+          and d_model columns (the vector). Vocab size and d_model are independent.
+          d_model={D_MODEL} here to fit the heatmap — real models use 512–8192:
         </p>
         <div className="space-y-2">
           {tokens.map((t, i) => (
