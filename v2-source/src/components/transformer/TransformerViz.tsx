@@ -412,24 +412,82 @@ function AttnPanel({ attnType, tokens, weightsPerHead, layerIdx }: {
   const [selectedHead, setSelectedHead] = useState(0)
   const { theme } = useTheme()
   const colors = useMemo(() => makeColors(theme === 'dark'), [theme])
+  const dHead = D_MODEL / N_HEADS
 
   return (
     <PanelCard title={`Self-Attention · Layer ${layerIdx}`}>
+      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+        Pipeline: H (prev layer) → <span style={{ color: 'var(--accent)' }}>self-attention</span> → Add &amp; Norm → FFN
+      </div>
       <Info>
-        {attnType === 'mha'
-          ? `Multi-Head Attention runs ${N_HEADS} independent attention heads in parallel. Each head can focus on different types of relationships between tokens.`
-          : `Grouped Query Attention uses ${N_HEADS} Q heads but only ${N_KV_GQA} K/V groups. Each group of ${N_HEADS / N_KV_GQA} Q heads shares one K and V, reducing memory by ${N_HEADS / N_KV_GQA}x with minimal quality loss.`}
+        Attention lets every token look at all previous tokens and decide how much to
+        borrow from each. The hidden state H is projected into three roles: Q (what this
+        token is asking for), K (what each token advertises), and V (what each token
+        actually passes along). The dot product Q·Kᵀ scores how well each query matches
+        each key. After a causal mask and softmax those scores become weights, and the
+        output is a weighted sum of V vectors.
       </Info>
+      {attnType === 'gqa' && (
+        <Info>
+          GQA keeps {N_HEADS} Q heads but shrinks K and V down to {N_KV_GQA} groups.
+          Q heads within the same group share one K and one V. The KV cache at inference
+          time is {N_HEADS / N_KV_GQA}x smaller, which matters a lot for long contexts.
+        </Info>
+      )}
       <Formula>
-        Attention(Q, K, V) = softmax(QK^T / sqrt(d_k) + mask) · V<br />
-        d_k = {D_MODEL / N_HEADS} (head dim) | mask = causal (lower triangular)
+        scores = Q · Kᵀ / sqrt(d_head)   d_head = d_model / n_heads = {dHead}<br />
+        scores[i, j] = -inf  if j &gt; i   (causal mask, no future tokens)<br />
+        attn  = softmax(scores, dim=-1)   each row sums to 1<br />
+        out   = attn · V
       </Formula>
+      <CodeBlock code={attnType === 'mha'
+        ? `# H: (batch, seq_len, d_model) from previous step
+d_head = d_model // n_heads   # e.g. 4096 // 32 = 128
+
+Q = H @ W_q   # (B, T, d_model)
+K = H @ W_k
+V = H @ W_v
+
+# split into heads
+Q = Q.view(B, T, n_heads, d_head).transpose(1, 2)   # (B, n_heads, T, d_head)
+K = K.view(B, T, n_heads, d_head).transpose(1, 2)
+V = V.view(B, T, n_heads, d_head).transpose(1, 2)
+
+scores = Q @ K.transpose(-2, -1) / math.sqrt(d_head)  # (B, n_heads, T, T)
+
+# causal mask: upper triangle -> -inf so softmax zeroes them out
+mask = torch.triu(torch.ones(T, T, dtype=torch.bool), diagonal=1)
+scores = scores.masked_fill(mask, float('-inf'))
+
+attn = torch.softmax(scores, dim=-1)   # (B, n_heads, T, T)
+out  = attn @ V                        # (B, n_heads, T, d_head)
+
+# merge heads and project
+out = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`
+        : `# GQA: same as MHA except K and V use fewer heads
+d_head   = d_model // n_heads      # same head size
+n_kv     = n_kv_heads              # e.g. 8 instead of 32
+
+Q = (H @ W_q).view(B, T, n_heads, d_head).transpose(1, 2)
+K = (H @ W_k).view(B, T, n_kv,    d_head).transpose(1, 2)
+V = (H @ W_v).view(B, T, n_kv,    d_head).transpose(1, 2)
+
+# expand K, V so each Q head has a matching K, V
+K = K.repeat_interleave(n_heads // n_kv, dim=1)   # (B, n_heads, T, d_head)
+V = V.repeat_interleave(n_heads // n_kv, dim=1)
+
+# rest is identical to MHA
+scores = Q @ K.transpose(-2, -1) / math.sqrt(d_head)
+scores = scores.masked_fill(causal_mask, float('-inf'))
+out    = torch.softmax(scores, dim=-1) @ V
+out    = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`} />
       {attnType === 'mha'
         ? <MHADiagram selectedHead={selectedHead} onSelect={setSelectedHead} />
         : <GQADiagram selectedHead={selectedHead} onSelect={setSelectedHead} />}
       <div>
         <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Attention weights for Head {selectedHead} — rows=Query, cols=Key (causal mask applied):
+          Attention weights for Head {selectedHead} (rows = query token, cols = key token).
+          Each row is one softmax output, so it sums to 1:
         </p>
         <div className="overflow-x-auto">
           <AttnHeatmap
@@ -438,8 +496,9 @@ function AttnPanel({ attnType, tokens, weightsPerHead, layerIdx }: {
             colorFn={colors.attn} />
         </div>
         <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Each row sums to 1. The diagonal and below are the only reachable positions
-          (causal masking prevents looking at future tokens during generation).
+          Only the lower triangle is reachable. Position i can only attend to positions
+          0 through i. The upper triangle is masked to -inf before softmax, so those
+          weights come out as exactly 0.
         </p>
       </div>
     </PanelCard>
