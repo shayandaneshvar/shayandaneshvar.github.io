@@ -186,10 +186,10 @@ export default function MemoryCalc() {
         {tab === 'inference' ? (
           <>
             <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-              FP16 weights loaded once. KV cache grows with each generated token up to context length.
+              BF16 weights loaded once. KV cache grows with each generated token up to context length.
               No gradients or optimizer states.
             </p>
-            <MemRow label="Weights (FP16)" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="Weights (BF16)" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={inf_weights} total={inf_total} color={COLORS.weights} />
             <MemRow
               label="KV cache (FP16)"
@@ -211,14 +211,15 @@ export default function MemoryCalc() {
         ) : (
           <>
             <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-              Mixed precision: FP16 forward/backward, FP32 master weights and optimizer states (AdamW).
+              Mixed precision: BF16 forward/backward (same range as FP32, no loss scaling needed),
+              FP32 master weights and optimizer states (AdamW).
               Activations without gradient checkpointing — enabling checkpointing trades compute for memory.
             </p>
-            <MemRow label="FP16 weights" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="BF16 weights" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={tr_fp16_weights} total={tr_total} color={COLORS.weights} />
-            <MemRow label="FP16 gradients" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="BF16 gradients" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={tr_fp16_grads} total={tr_total} color={COLORS.grads} />
-            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes — FP16 rounds tiny updates (grad × lr ≈ 1e-7) to zero; FP32 has enough precision to keep them`}
+            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes — BF16 has only 7 mantissa bits so tiny updates (grad × lr ≈ 1e-7) still round to zero; FP32 keeps them`}
               bytes={tr_fp32_master} total={tr_total} color={COLORS.master} />
             <MemRow label="Adam first moment (m)" note={`${cfg.paramsB}B params × 4 bytes (FP32)`}
               bytes={tr_adam_m} total={tr_total} color={COLORS.adamM} />
@@ -243,7 +244,7 @@ export default function MemoryCalc() {
               </div>
               <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
                 {bytesPerParam.toFixed(1)} bytes per parameter for model + optimizer
-                (rule of thumb: 16 bytes/param for AdamW mixed precision).
+                (rule of thumb: 16 bytes/param — 2 BF16 weights + 2 BF16 grads + 4 FP32 master + 4 Adam m + 4 Adam v).
                 Activation memory dominates at large batch × sequence sizes.
               </p>
             </div>
