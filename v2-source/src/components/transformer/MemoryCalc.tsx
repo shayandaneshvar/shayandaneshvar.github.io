@@ -218,7 +218,7 @@ export default function MemoryCalc() {
               bytes={tr_fp16_weights} total={tr_total} color={COLORS.weights} />
             <MemRow label="FP16 gradients" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={tr_fp16_grads} total={tr_total} color={COLORS.grads} />
-            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes — stable accumulation`}
+            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes — FP16 rounds tiny updates (grad × lr ≈ 1e-7) to zero; FP32 has enough precision to keep them`}
               bytes={tr_fp32_master} total={tr_total} color={COLORS.master} />
             <MemRow label="Adam first moment (m)" note={`${cfg.paramsB}B params × 4 bytes (FP32)`}
               bytes={tr_adam_m} total={tr_total} color={COLORS.adamM} />
