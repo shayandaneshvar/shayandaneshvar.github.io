@@ -33,10 +33,10 @@ export default function BlogTransformerViz() {
             Transformer Architecture Explorer
           </h1>
           <p className="text-base leading-relaxed max-w-2xl" style={{ color: 'var(--text)' }}>
-            An interactive decoder-only transformer you can poke at. Switch between sinusoidal
-            and RoPE position encodings, compare multi-head vs grouped-query attention, and
-            see how different sampling strategies carve up the output distribution.
-            Click any module in the architecture diagram to expand it.
+            An interactive causal decoder-only transformer you can poke at. Switch between
+            sinusoidal and RoPE position encodings, compare multi-head vs grouped-query
+            attention, and see how temperature and different sampling strategies carve up
+            the output distribution. Click any module in the architecture diagram to expand it.
           </p>
           <p className="font-mono text-sm mt-4" style={{ color: 'var(--text-muted)' }}>
             June 2026 · S. Shayan Daneshvar

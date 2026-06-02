@@ -81,8 +81,9 @@ const RAW_SAMPLES: [string, number][] = [
   ['carpet', -1.9], ['door', -2.2],
 ]
 
-export function getSamples(): SampleEntry[] {
-  const probs = softmax(RAW_SAMPLES.map(x => x[1]))
+export function getSamples(temperature = 1.0): SampleEntry[] {
+  const t = Math.max(0.01, temperature)
+  const probs = softmax(RAW_SAMPLES.map(x => x[1] / t))
   let cum = 0
   return RAW_SAMPLES.map(([token], i) => {
     cum += probs[i]

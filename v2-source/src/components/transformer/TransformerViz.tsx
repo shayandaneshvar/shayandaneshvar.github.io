@@ -581,30 +581,60 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
 function LMHeadPanel() {
   return (
     <PanelCard title="LM Head (Unembedding)">
+      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+        Pipeline: H (last layer) → <span style={{ color: 'var(--accent)' }}>LM head</span> → logits → loss (train) / sample (inference)
+      </div>
       <Info>
-        The LM head projects the final hidden state back to the vocabulary dimension.
-        In many models (weight tying) the unembedding matrix is the transpose of the
-        token embedding matrix, keeping the parameter count down.
+        The LM head is a linear layer that projects each token's hidden state from
+        d_model dimensions to vocab_size dimensions. The result is a vector of raw
+        scores (logits), one per vocabulary entry. In many models the weight matrix
+        here is the same as the embedding matrix transposed (weight tying), so no
+        extra parameters are needed.
       </Info>
       <Formula>
-        logits = W_u · h_last   (shape: vocab_size)<br />
-        probs = softmax(logits / temperature)
+        logits = H @ W_u.T   shape: (B, T, vocab_size)<br />
+        W_u ∈ ℝ^(vocab_size × d_model)
       </Formula>
       <div className="flex items-center gap-3">
         <div className="font-mono text-xs px-3 py-2 rounded border"
           style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
-          Hidden: d_model = {D_MODEL}
+          H: (B, T, {D_MODEL})
         </div>
         <span style={{ color: 'var(--text-muted)' }}>→</span>
         <div className="font-mono text-xs px-3 py-2 rounded border"
           style={{ borderColor: 'var(--accent)', backgroundColor: 'var(--accent-8)', color: 'var(--accent)' }}>
-          Logits: vocab_size ≈ 32K–150K
+          logits: (B, T, vocab_size)
         </div>
       </div>
-      <Info>
-        Only the last token position's hidden state is used during autoregressive generation.
-        The full sequence of hidden states is used during training to compute cross-entropy loss.
-      </Info>
+      <div>
+        <p className="font-mono text-xs mb-2 mt-2" style={{ color: 'var(--text-muted)' }}>Training: cross-entropy loss</p>
+        <Info>
+          During training you have the ground truth next token at every position.
+          The loss measures how much probability the model assigned to the correct token.
+          It is computed over all T positions in parallel, which is why teacher forcing
+          (feeding the real tokens as input regardless of what the model predicted) is used.
+        </Info>
+        <Formula>
+          loss = -log(softmax(logits)[true_token_id])<br />
+          averaged over all positions and batch items<br />
+          <br />
+          L = -1/(B·T) · Σ log p(xₜ₊₁ | x₀...xₜ)
+        </Formula>
+        <CodeBlock code={`# logits: (B, T, vocab_size)
+# targets: (B, T)  — the actual next token at each position
+
+loss = F.cross_entropy(
+    logits.view(B * T, vocab_size),
+    targets.view(B * T),
+)
+# F.cross_entropy = softmax + negative log likelihood in one step
+# gradients flow back through every layer including the embedding matrix`} />
+        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          Inference: only the last position's logits are used. Temperature is applied,
+          then a sampling strategy (greedy, top-k, top-p) picks the next token.
+          That token is appended to the input and the process repeats.
+        </p>
+      </div>
     </PanelCard>
   )
 }
@@ -688,11 +718,12 @@ H0 = embedding(ids)   # just grabs rows, no multiply
 
 // ─── Sampling Panel ──────────────────────────────────────────────────────────
 
-function SamplingPanel({ type, topK, topP, data, onTopK, onTopP }: {
-  type: SamplingType; topK: number; topP: number
+function SamplingPanel({ type, topK, topP, temperature, data, onTopK, onTopP, onTemperature }: {
+  type: SamplingType; topK: number; topP: number; temperature: number
   data: SampleEntry[]
   onTopK: (k: number) => void
   onTopP: (p: number) => void
+  onTemperature: (t: number) => void
 }) {
   const maxProb = data[0]?.prob ?? 1
   const selected = (entry: SampleEntry, idx: number): boolean => {
@@ -705,27 +736,44 @@ function SamplingPanel({ type, topK, topP, data, onTopK, onTopP }: {
   return (
     <PanelCard title="Sampling Strategy">
       <Info>
-        After the LM head produces logits, a sampling strategy selects the next token.
-        The context is "The cat sat on the ___" — so "mat" dominates the distribution.
+        After the LM head produces logits, temperature is applied first, then a sampling
+        strategy picks the next token. Temperature scales the logits before softmax:
+        low temperature sharpens the distribution toward the top token, high temperature
+        flattens it toward uniform. The context here is "The cat sat on the ___".
       </Info>
-      {type === 'topk' && (
+      <Formula>
+        probs = softmax(logits / temperature)<br />
+        temperature &lt; 1 → sharper (more greedy)<br />
+        temperature &gt; 1 → flatter (more random)<br />
+        temperature = 1 → raw model distribution
+      </Formula>
+      <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>k =</span>
-          <input type="range" min={1} max={15} value={topK}
-            onChange={e => onTopK(Number(e.target.value))}
-            className="flex-1 accent-[var(--accent)]" />
-          <span className="font-mono text-xs w-4" style={{ color: 'var(--accent)' }}>{topK}</span>
+          <span className="font-mono text-xs w-16 shrink-0" style={{ color: 'var(--text-muted)' }}>temp =</span>
+          <input type="range" min={10} max={200} value={Math.round(temperature * 100)}
+            onChange={e => onTemperature(Number(e.target.value) / 100)}
+            className="flex-1" />
+          <span className="font-mono text-xs w-8" style={{ color: 'var(--accent)' }}>{temperature.toFixed(2)}</span>
         </div>
-      )}
-      {type === 'topp' && (
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>p =</span>
-          <input type="range" min={50} max={99} value={Math.round(topP * 100)}
-            onChange={e => onTopP(Number(e.target.value) / 100)}
-            className="flex-1 accent-[var(--accent)]" />
-          <span className="font-mono text-xs w-8" style={{ color: 'var(--accent)' }}>{topP.toFixed(2)}</span>
-        </div>
-      )}
+        {type === 'topk' && (
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs w-16 shrink-0" style={{ color: 'var(--text-muted)' }}>k =</span>
+            <input type="range" min={1} max={15} value={topK}
+              onChange={e => onTopK(Number(e.target.value))}
+              className="flex-1" />
+            <span className="font-mono text-xs w-8" style={{ color: 'var(--accent)' }}>{topK}</span>
+          </div>
+        )}
+        {type === 'topp' && (
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs w-16 shrink-0" style={{ color: 'var(--text-muted)' }}>p =</span>
+            <input type="range" min={50} max={99} value={Math.round(topP * 100)}
+              onChange={e => onTopP(Number(e.target.value) / 100)}
+              className="flex-1" />
+            <span className="font-mono text-xs w-8" style={{ color: 'var(--accent)' }}>{topP.toFixed(2)}</span>
+          </div>
+        )}
+      </div>
       <div className="space-y-1.5">
         {data.map((entry, i) => {
           const isSelected = selected(entry, i)
@@ -838,6 +886,7 @@ export default function TransformerViz() {
   const [samplingType, setSamplingType] = useState<SamplingType>('greedy')
   const [topK, setTopK] = useState(5)
   const [topP, setTopP] = useState(0.9)
+  const [temperature, setTemperature] = useState(1.0)
   const [selected, setSelected] = useState<SelectedModule>('pos-enc')
   const [layer1Open, setLayer1Open] = useState(true)
   const [layer2Open, setLayer2Open] = useState(false)
@@ -855,7 +904,7 @@ export default function TransformerViz() {
     () => Array.from({ length: N_HEADS }, (_, h) => attnWeights(tokens.length, h, 2)),
     [tokens.length]
   )
-  const samples = useMemo(() => getSamples(), [])
+  const samples = useMemo(() => getSamples(temperature), [temperature])
 
   const { theme } = useTheme()
   const colors = useMemo(() => makeColors(theme === 'dark'), [theme])
@@ -960,7 +1009,8 @@ export default function TransformerViz() {
               {selected === 'lm-head' && <LMHeadPanel />}
               {selected === 'sampling' && (
                 <SamplingPanel type={samplingType} topK={topK} topP={topP}
-                  data={samples} onTopK={setTopK} onTopP={setTopP} />
+                  temperature={temperature} data={samples}
+                  onTopK={setTopK} onTopP={setTopP} onTemperature={setTemperature} />
               )}
             </motion.div>
           </AnimatePresence>
