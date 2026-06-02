@@ -512,14 +512,15 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
         but as a side effect of getting good at predicting text.
       </Info>
       <Formula>
-        text → BPE → [id₀, id₁, ..., idₙ]<br />
-        E ∈ ℝ^(V × d_model),  initialized ~ N(0, 0.02)<br />
-        H₀ = E[[id₀, id₁, ..., idₙ]]  →  shape: (seq_len × d_model)
+        E ∈ ℝ^(V × d_model)   ← V rows, each d_model wide<br />
+        <br />
+        H₀ = stack(E[id₀], E[id₁], ..., E[idₙ])<br />
+           = (seq_len rows) × (d_model cols each)<br />
+           = ℝ^(seq_len × d_model)
       </Formula>
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          Applied to the input: each token ID selects one row from E.
-          The result is a matrix — one vector per token, stacked:
+          Each token contributes exactly one row. seq_len tokens → seq_len rows → (seq_len × d_model):
         </p>
         <div className="space-y-1.5">
           {tokens.map((t, i) => {
