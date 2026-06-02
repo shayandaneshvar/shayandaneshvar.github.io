@@ -498,17 +498,19 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
   return (
     <PanelCard title="Token Embedding">
       <Info>
-        Each token in the vocabulary maps to a learned dense vector of dimension d_model = {D_MODEL}.
-        The embedding matrix has shape (vocab_size × d_model). During training, these vectors
-        are updated via gradient descent to encode semantic meaning.
+        Before any of this, raw text is split into subword pieces by a tokenizer (usually
+        BPE or SentencePiece). "unbelievable" might become ["un", "believ", "able"]; the
+        word "cat" is likely one piece. The vocabulary is these subword types, typically
+        32K–150K entries. Each token ID then indexes into a learned embedding matrix to
+        get a dense vector of dimension d_model.
       </Info>
       <Formula>
-        E ∈ ℝ^(V × d_model)   V ≈ 32K-150K tokens<br />
-        h_0(t) = E[token_id_t]
+        text → BPE tokenizer → [id₀, id₁, ..., idₙ]<br />
+        E ∈ ℝ^(V × d_model),  h₀(t) = E[idₜ]
       </Formula>
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          Current tokens → embedding lookup:
+          Token → integer ID → row lookup in E (d_model = {D_MODEL} here, 4096–8192 in real models):
         </p>
         <div className="space-y-2">
           {tokens.map((t, i) => (
@@ -525,8 +527,9 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
           ))}
         </div>
         <p className="font-mono text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
-          After embedding lookup, the positional encoding is added element-wise:
-          h = Embedding(token) + PE(position)
+          Positional encoding is then added element-wise: h = E[id] + PE(position).
+          In models with weight tying, this same matrix E is reused (transposed) as the
+          LM head at the output end.
         </p>
       </div>
     </PanelCard>
