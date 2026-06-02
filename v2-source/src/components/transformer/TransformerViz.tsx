@@ -514,31 +514,42 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
       <Formula>
         text → BPE → [id₀, id₁, ..., idₙ]<br />
         E ∈ ℝ^(V × d_model),  initialized ~ N(0, 0.02)<br />
-        h₀(t) = E[idₜ]   (row lookup, not matrix multiply)
+        H₀ = E[[id₀, id₁, ..., idₙ]]  →  shape: (seq_len × d_model)
       </Formula>
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          V rows (one per vocab entry) × d_model columns. d_model={D_MODEL} here for the
-          heatmap — real models use 512–8192. Vocab size and d_model are independent axes:
+          Applied to the input: each token ID selects one row from E.
+          The result is a matrix — one vector per token, stacked:
         </p>
-        <div className="space-y-2">
-          {tokens.map((t, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="font-mono text-xs w-16 text-right" style={{ color: 'var(--accent)' }}>[{i}] {t}</span>
-              <div className="flex-1 h-3 rounded overflow-hidden" style={{ backgroundColor: 'var(--surface-2)' }}>
-                <div className="h-full rounded" style={{
-                  width: `${30 + ((i * 17 + 7) % 60)}%`,
-                  backgroundColor: 'var(--accent)', opacity: 0.4 + (i % 3) * 0.2,
-                }} />
+        <div className="space-y-1.5">
+          {tokens.map((t, i) => {
+            const seed = (i * 17 + 7)
+            return (
+              <div key={i} className="flex items-center gap-2 text-xs font-mono">
+                <span className="w-14 text-right shrink-0" style={{ color: 'var(--accent)' }}>id={seed % 999 + 100}</span>
+                <span style={{ color: 'var(--text-muted)' }}>→</span>
+                <span className="w-14 shrink-0" style={{ color: 'var(--text)' }}>{t}</span>
+                <div className="flex gap-px flex-1 h-4 items-center">
+                  {Array.from({ length: Math.min(D_MODEL, 20) }, (_, d) => {
+                    const v = Math.sin((seed + d) * 1.3) * 0.5 + 0.5
+                    return (
+                      <div key={d} className="flex-1 h-full rounded-sm"
+                        style={{ backgroundColor: 'var(--accent)', opacity: 0.15 + v * 0.7 }} />
+                    )
+                  })}
+                  <span className="ml-1 shrink-0" style={{ color: 'var(--text-muted)' }}>…</span>
+                </div>
               </div>
-              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>d={D_MODEL}</span>
-            </div>
-          ))}
+            )
+          })}
         </div>
-        <p className="font-mono text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
-          Positional encoding is then added element-wise: h = E[id] + PE(position).
-          In models with weight tying, this same matrix E is reused (transposed) as the
-          LM head at the output end.
+        <p className="font-mono text-xs mt-1 mb-3" style={{ color: 'var(--text-muted)' }}>
+          Each bar above is one element of the d_model-dimensional row vector for that token.
+        </p>
+        <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+          Positional encoding is added element-wise on top: H = H₀ + PE.
+          In many models (weight tying), E is reused transposed as the LM head — same
+          matrix, two roles.
         </p>
       </div>
     </PanelCard>
