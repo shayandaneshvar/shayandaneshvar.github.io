@@ -184,25 +184,45 @@ function SinusoidalPanel({ tokens, colors }: { tokens: string[]; colors: ColorFn
   const pe = useMemo(() => sinusoidalPE(tokens.length), [tokens.length])
   return (
     <PanelCard title="Sinusoidal Positional Encoding">
+      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+        Pipeline: H₀ (embedding output) → <span style={{ color: 'var(--accent)' }}>H₀ + PE</span> → Layer 1
+      </div>
       <Info>
-        Each position gets a unique vector computed from sine and cosine waves at different
-        frequencies. The model learns to attend to positional patterns from these deterministic
-        embeddings, which generalize to unseen sequence lengths.
+        Attention computes dot products between all token pairs — it has no built-in
+        sense of order. Without position info, "cat sat on mat" and "mat on sat cat"
+        look identical. Sinusoidal PE fixes this by adding a unique fixed vector to
+        each position before anything else runs. It is computed once, never learned.
       </Info>
       <Formula>
-        PE(pos, 2i) = sin(pos / 10000^(2i/d_model))<br />
-        PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
+        PE[pos, 2i]   = sin(pos / 10000^(2i / d_model))<br />
+        PE[pos, 2i+1] = cos(pos / 10000^(2i / d_model))<br />
+        <br />
+        H = H₀ + PE   ← element-wise, same shape (seq_len × d_model)
       </Formula>
+      <CodeBlock code={`def sinusoidal_pe(seq_len, d_model):
+    pe  = torch.zeros(seq_len, d_model)
+    pos = torch.arange(seq_len).unsqueeze(1)        # (seq_len, 1)
+    div = torch.exp(torch.arange(0, d_model, 2) *
+                    -(math.log(10000.0) / d_model)) # (d_model/2,)
+    pe[:, 0::2] = torch.sin(pos * div)
+    pe[:, 1::2] = torch.cos(pos * div)
+    return pe   # (seq_len, d_model), no parameters
+
+# coming from the embedding step:
+# H0.shape → (6, 4096)
+pe = sinusoidal_pe(seq_len=6, d_model=4096)  # (6, 4096)
+H  = H0 + pe                                  # (6, 4096)`} />
       <div>
         <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Heatmap: positions (rows) × dimensions (cols={D_MODEL}) — blue=positive, red=negative
+          PE matrix for your input — rows=positions, cols=dimensions (blue=positive, red=negative).
+          Each row is unique so every position gets a distinct signal:
         </p>
         <div className="overflow-x-auto">
           <PEHeatmap data={pe} rowLabels={tokens} colorFn={colors.pe} />
         </div>
         <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Columns 0-1 oscillate fast (high freq), columns 30-31 oscillate slow (low freq).
-          Each row is unique, giving the model unambiguous position signals.
+          Left columns oscillate fast (high frequency), right columns oscillate slowly.
+          The combination makes every position uniquely identifiable.
         </p>
       </div>
     </PanelCard>
@@ -245,19 +265,41 @@ function RoPEPanel({ tokens }: { tokens: string[] }) {
   const showcasePairs = [0, 4, 15]
   return (
     <PanelCard title="Rotary Position Embedding (RoPE)">
+      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+        Pipeline: H (after embedding) → Layer 1 → <span style={{ color: 'var(--accent)' }}>rotate Q & K with RoPE</span> → attention
+      </div>
       <Info>
-        RoPE encodes position by rotating Q and K vectors in 2D subspaces. Each dimension
-        pair rotates at a different frequency: early pairs spin fast, late pairs spin
-        almost not at all. Crucially, attention Q·K^T depends only on the
-        relative rotation, i.e., only on m-n (the position gap).
+        Unlike sinusoidal PE, RoPE is not added to the embeddings. Instead, inside every
+        attention layer, after computing Q and K from the hidden state, each Q and K vector
+        is rotated in 2D subspaces by an angle that depends on the token's position. The
+        dot product Q·Kᵀ then naturally depends only on the relative distance between
+        positions, not their absolute values.
       </Info>
       <Formula>
-        f_q(x_m, m) = (W_q x_m) e^(im·Θ)<br />
-        attn(m,n) depends only on (m - n)
+        θ_i = 1 / 10000^(2i / d_model)   ← base frequency per dim pair i<br />
+        <br />
+        q_m = rotate(W_q · h_m,  m · [θ₀, θ₁, ..., θ_k])   k = d/2<br />
+        k_n = rotate(W_k · h_n,  n · [θ₀, θ₁, ..., θ_k])<br />
+        <br />
+        q_m · k_n  depends only on (m - n)
       </Formula>
+      <CodeBlock code={`# precompute rotation frequencies (done once, outside the loop)
+def precompute_freqs(d_head, max_seq=4096, base=10000):
+    i     = torch.arange(0, d_head, 2).float()
+    theta = 1.0 / (base ** (i / d_head))          # (d_head/2,)
+    pos   = torch.arange(max_seq).float()          # (max_seq,)
+    freqs = torch.outer(pos, theta)                # (max_seq, d_head/2)
+    return torch.polar(torch.ones_like(freqs), freqs)  # complex
+
+# inside each attention layer, applied to Q and K (not the embeddings)
+def apply_rope(x, freqs_cis):
+    # x: (batch, seq_len, n_heads, d_head)
+    x_c = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
+    out = torch.view_as_real(x_c * freqs_cis).flatten(-2)
+    return out.type_as(x)`} />
       <div>
         <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Frequency per dimension pair (θ_i = 1/10000^(2i/{D_MODEL})):
+          Rotation frequency θ_i per dimension pair — fast for early dims, near-zero for late:
         </p>
         <div className="overflow-x-auto">
           <svg width={freqs.length * 19 + 40} height={80} style={{ display: 'block' }}>
@@ -282,7 +324,8 @@ function RoPEPanel({ tokens }: { tokens: string[] }) {
       </div>
       <div>
         <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Rotation of token positions in 3 sample dimension pairs (numbers = token index):
+          Where each token lands in 3 dim pairs after rotation (numbers = token index).
+          Fast pairs spread tokens apart; slow pairs keep them close:
         </p>
         <div className="flex gap-4 flex-wrap">
           {showcasePairs.map(i => (
@@ -290,10 +333,6 @@ function RoPEPanel({ tokens }: { tokens: string[] }) {
               label={`pair ${i}: θ=${freqs[i].toFixed(4)}`} />
           ))}
         </div>
-        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Pair 0 spins fast (tokens spread far). Pair 15 barely moves (nearly same angle).
-          Together they give the model a rich multi-frequency position signal.
-        </p>
       </div>
     </PanelCard>
   )
