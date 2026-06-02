@@ -609,11 +609,17 @@ function LMHeadPanel() {
       <div className="space-y-3">
         <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Training: cross-entropy loss</p>
         <Info>
-          The training data is a sequence of tokens. You split it so the input is every
-          token except the last, and the target is every token except the first — a shift
-          of one position. One forward pass through the model then produces T predictions
-          at once, because the causal mask ensures position t only sees x₀ through xₜ.
-          You do not run T separate forward passes.
+          At inference you generate one token at a time: feed the sequence, sample the
+          last position's output, append it, repeat. T new tokens = T forward passes.
+        </Info>
+        <Info>
+          At training you already have the full sequence from the dataset. The model's
+          output is not a single token — it is (B, T, vocab_size): one logit vector per
+          position. Position t's logit vector was computed using only x₀...xₜ as context
+          (the causal mask zeroed out everything after t), so it is a valid prediction
+          for xₜ₊₁. All T predictions come out of one forward pass in parallel. The
+          future tokens are not used as input anywhere — they only appear in the targets
+          tensor to compute the loss against.
         </Info>
         <CodeBlock code={`# raw sequence: ["The", "cat", "sat", "on", "the", "mat"]
 # token ids:  [  464, 3797, 3332,  319,  262, 2603]
