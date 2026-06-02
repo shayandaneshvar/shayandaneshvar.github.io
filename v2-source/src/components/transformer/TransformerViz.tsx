@@ -498,22 +498,28 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
   return (
     <PanelCard title="Token Embedding">
       <Info>
-        Before any of this, raw text is split into subword pieces by a tokenizer (usually
-        BPE or SentencePiece). "unbelievable" might become ["un", "believ", "able"]; "cat"
-        is likely one piece. The vocabulary is the full set of these subword types, typically
-        32K–150K entries, each assigned an integer ID. The embedding matrix is just a table:
-        one row per vocabulary entry. Looking up a token is grabbing its row — that row is
-        the vector the model uses to represent it.
+        Raw text is first split into subword pieces by a tokenizer (BPE or SentencePiece).
+        "unbelievable" might become ["un", "believ", "able"]; "cat" is likely one piece.
+        Each unique subword type gets an integer ID. The vocabulary is the full set of these
+        types, typically 32K–150K entries.
+      </Info>
+      <Info>
+        The embedding matrix E has one row per vocab entry and d_model columns. It starts
+        randomly initialized. During training, when the model predicts the wrong next token,
+        the loss backpropagates through every layer and into the embedding rows for whatever
+        tokens appeared in that batch. Over billions of updates, rows for related tokens drift
+        close together in the vector space — not because anything manually assigns meaning,
+        but as a side effect of getting good at predicting text.
       </Info>
       <Formula>
-        text → BPE tokenizer → [id₀, id₁, ..., idₙ]<br />
-        E ∈ ℝ^(V × d_model),  h₀(t) = E[idₜ]
+        text → BPE → [id₀, id₁, ..., idₙ]<br />
+        E ∈ ℝ^(V × d_model),  initialized ~ N(0, 0.02)<br />
+        h₀(t) = E[idₜ]   (row lookup, not matrix multiply)
       </Formula>
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          Token → integer ID → row lookup in E. The matrix has V rows (one per vocab entry)
-          and d_model columns (the vector). Vocab size and d_model are independent.
-          d_model={D_MODEL} here to fit the heatmap — real models use 512–8192:
+          V rows (one per vocab entry) × d_model columns. d_model={D_MODEL} here for the
+          heatmap — real models use 512–8192. Vocab size and d_model are independent axes:
         </p>
         <div className="space-y-2">
           {tokens.map((t, i) => (
