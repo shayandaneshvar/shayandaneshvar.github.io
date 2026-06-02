@@ -104,6 +104,15 @@ function Formula({ children }: { children: React.ReactNode }) {
   )
 }
 
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <pre className="font-mono text-xs px-4 py-3 rounded border overflow-x-auto leading-relaxed"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
+      {code}
+    </pre>
+  )
+}
+
 // ─── Heatmap SVG ─────────────────────────────────────────────────────────────
 
 function PEHeatmap({ data, rowLabels, colorFn }: {
@@ -518,6 +527,18 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
            = (seq_len rows) × (d_model cols each)<br />
            = ℝ^(seq_len × d_model)
       </Formula>
+      <CodeBlock code={`import torch.nn as nn
+
+# randomly initialized, updated during training
+embedding = nn.Embedding(num_embeddings=32000, embedding_dim=4096)
+# embedding.weight.shape → (32000, 4096)
+
+# token IDs produced by the tokenizer
+ids = torch.tensor([464, 3797, 3332, 319, 262, 2603])
+#                   The  cat  sat   on  the  mat
+
+H0 = embedding(ids)   # just grabs rows, no multiply
+# H0.shape → (6, 4096)  i.e. (seq_len, d_model)`} />
       <div>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
           Each token contributes exactly one row. seq_len tokens → seq_len rows → (seq_len × d_model):
