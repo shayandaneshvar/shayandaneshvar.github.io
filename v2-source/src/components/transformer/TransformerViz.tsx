@@ -518,58 +518,141 @@ out    = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`} />
 // ─── FFN Panel ───────────────────────────────────────────────────────────────
 
 function FFNPanel({ layerIdx }: { layerIdx: number }) {
-  const geluX = Array.from({ length: 61 }, (_, i) => -3 + i * 0.1)
-  const geluY = geluX.map(x => x * 0.5 * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3))))
-  const svgW = 260; const svgH = 90
-  const xMin = -3; const xMax = 3; const yMin = -0.5; const yMax = 3
-  const toSVG = (x: number, y: number) => ({
+  const [variant, setVariant] = useState<'gelu' | 'swiglu'>('gelu')
+
+  const xs = Array.from({ length: 61 }, (_, i) => -3 + i * 0.1)
+  const geluY = xs.map(x => x * 0.5 * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3))))
+  const siluY = xs.map(x => x / (1 + Math.exp(-x)))
+
+  const svgW = 280; const svgH = 100
+  const xMin = -3; const xMax = 3; const yMin = -0.6; const yMax = 3.2
+  const pt = (x: number, y: number) => ({
     sx: ((x - xMin) / (xMax - xMin)) * svgW,
     sy: svgH - ((y - yMin) / (yMax - yMin)) * svgH,
   })
-  const pathD = geluX.map((x, i) => {
-    const { sx, sy } = toSVG(x, geluY[i])
+  const path = (ys: number[]) => xs.map((x, i) => {
+    const { sx, sy } = pt(x, ys[i])
     return `${i === 0 ? 'M' : 'L'}${sx.toFixed(1)},${sy.toFixed(1)}`
   }).join(' ')
 
+  const iDim = D_MODEL * 4          // classic 4× expansion
+  const iDimSwiGLU = Math.round(D_MODEL * 8 / 3)  // 8/3 × to keep same param count with 3 matrices
+
   return (
     <PanelCard title={`Feed-Forward Network · Layer ${layerIdx}`}>
-      <Info>
-        The FFN applies two linear transformations with a GELU activation in between.
-        The hidden dimension is typically 4x the model dimension, giving the network
-        capacity to store and retrieve factual knowledge per position independently.
-      </Info>
-      <div className="space-y-2">
-        {[
-          { label: `Linear: ${D_MODEL} → ${D_MODEL * 4}`, sub: 'project up (4x expansion)' },
-          { label: 'GELU activation', sub: 'smooth non-linearity' },
-          { label: `Linear: ${D_MODEL * 4} → ${D_MODEL}`, sub: 'project down' },
-        ].map((row, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="font-mono text-xs px-3 py-2 rounded border flex-1"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
-              {row.label}
-            </div>
-            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{row.sub}</span>
-          </div>
+      <div className="flex gap-2">
+        {(['gelu', 'swiglu'] as const).map(v => (
+          <button key={v} onClick={() => setVariant(v)}
+            className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
+            style={variant === v
+              ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
+              : { color: 'var(--text)', borderColor: 'var(--border)' }}>
+            {v === 'gelu' ? 'GELU (GPT-2, BERT)' : 'SwiGLU (Llama, Qwen)'}
+          </button>
         ))}
       </div>
+
+      {variant === 'gelu' ? (
+        <>
+          <Info>
+            Two linear layers with GELU in between. The intermediate dimension expands
+            to 4× d_model, giving the network capacity to store and route information
+            per token independently of the attention mechanism.
+          </Info>
+          <div className="space-y-2">
+            {[
+              { label: `W₁: ${D_MODEL} → ${iDim}`, sub: 'project up (4× expansion)' },
+              { label: 'GELU', sub: 'smooth non-linearity, slight negative region' },
+              { label: `W₂: ${iDim} → ${D_MODEL}`, sub: 'project down' },
+            ].map((row, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="font-mono text-xs px-3 py-2 rounded border flex-1"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
+                  {row.label}
+                </div>
+                <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{row.sub}</span>
+              </div>
+            ))}
+          </div>
+          <Formula>
+            FFN(x) = GELU(x @ W₁) @ W₂<br />
+            params = 2 × d_model × 4·d_model = 8·d_model²
+          </Formula>
+        </>
+      ) : (
+        <>
+          <Info>
+            Three linear layers with a gated structure. Two parallel branches project
+            x up: one is the value (W_up), the other is the gate (W_gate). SiLU is
+            applied to the gate, then it is multiplied element-wise with the value
+            branch. The gate learns which parts of the value to pass through and which
+            to suppress, conditioned on the input. W_down then projects back.
+          </Info>
+          <Info>
+            The intermediate size is scaled to 8/3 × d_model instead of 4× so the
+            three-matrix parameter count equals the classic two-matrix count:
+            3 × d_model × (8/3 × d_model) = 8 × d_model². In practice models round
+            this to a hardware-friendly multiple (Llama 3 8B uses 3.5×, Qwen3 uses 3.4×).
+          </Info>
+          <div className="space-y-3">
+            <div className="flex gap-2 items-start">
+              <div className="flex-1 space-y-2">
+                <div className="font-mono text-xs px-3 py-2 rounded border text-center"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
+                  x @ W_up → [{iDimSwiGLU}]
+                </div>
+              </div>
+              <div className="font-mono text-xs pt-2.5" style={{ color: 'var(--accent)' }}>⊗</div>
+              <div className="flex-1 space-y-2">
+                <div className="font-mono text-xs px-3 py-2 rounded border text-center"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
+                  x @ W_gate → [{iDimSwiGLU}]
+                </div>
+                <div className="font-mono text-xs px-3 py-2 rounded border text-center"
+                  style={{ borderColor: 'var(--accent)', backgroundColor: 'var(--accent-8)', color: 'var(--accent)' }}>
+                  SiLU(·)
+                </div>
+              </div>
+            </div>
+            <div className="font-mono text-xs px-3 py-2 rounded border text-center"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-bright)' }}>
+              W_down: [{iDimSwiGLU}] → {D_MODEL}
+            </div>
+          </div>
+          <Formula>
+            FFN(x) = (x @ W_up  ⊙  SiLU(x @ W_gate)) @ W_down<br />
+            params = 3 × d_model × (8/3)·d_model = 8·d_model²  (same as GELU FFN)
+          </Formula>
+          <CodeBlock code={`def ffn_swiglu(x, W_up, W_gate, W_down):
+    return (x @ W_up * F.silu(x @ W_gate)) @ W_down
+    #               ↑ element-wise, not dot product
+    # SiLU(x) = x * sigmoid(x)  — smooth, self-gating, cheap to compute`} />
+        </>
+      )}
+
       <div>
-        <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>GELU activation function:</p>
+        <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+          Activation functions — GELU (blue) vs SiLU (purple):
+        </p>
         <svg width={svgW} height={svgH} style={{ display: 'block' }}>
-          <line x1={toSVG(xMin, 0).sx} y1={toSVG(0, 0).sy}
-            x2={toSVG(xMax, 0).sx} y2={toSVG(0, 0).sy}
+          <line x1={pt(xMin,0).sx} y1={pt(0,0).sy} x2={pt(xMax,0).sx} y2={pt(0,0).sy}
             stroke="var(--border)" strokeWidth={0.5} />
-          <line x1={toSVG(0, yMin).sx} y1={toSVG(0, yMin).sy}
-            x2={toSVG(0, yMax).sx} y2={toSVG(0, yMax).sy}
+          <line x1={pt(0,yMin).sx} y1={pt(0,yMin).sy} x2={pt(0,yMax).sx} y2={pt(0,yMax).sy}
             stroke="var(--border)" strokeWidth={0.5} />
-          <path d={pathD} fill="none" stroke="var(--accent)" strokeWidth={2} />
-          {[0].map(x => {
-            const { sx, sy } = toSVG(x, geluY[Math.round((x - xMin) / 0.1)])
-            return <circle key={x} cx={sx} cy={sy} r={3} fill="var(--accent)" />
-          })}
+          <path d={path(geluY)} fill="none" stroke="var(--accent)" strokeWidth={2} opacity={0.9} />
+          <path d={path(siluY)} fill="none" stroke="#a78bfa" strokeWidth={2} opacity={0.9} />
+          <text x={pt(1.2, geluY[Math.round((1.2-xMin)/0.1)]).sx + 4}
+            y={pt(1.2, geluY[Math.round((1.2-xMin)/0.1)]).sy}
+            fontSize={9} fill="var(--accent)">GELU</text>
+          <text x={pt(1.2, siluY[Math.round((1.2-xMin)/0.1)]).sx + 4}
+            y={pt(1.2, siluY[Math.round((1.2-xMin)/0.1)]).sy + 12}
+            fontSize={9} fill="#a78bfa">SiLU</text>
         </svg>
         <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-          GELU(x) ≈ x · 0.5 · (1 + tanh(√(2/π)(x + 0.044715x³)))
+          Both are smooth everywhere with a slight negative region near 0.
+          SiLU dips deeper negative; GELU tapers closer to 0 at large negative x.
+          In practice their performance is nearly identical — the SwiGLU gain comes
+          from the gating architecture, not SiLU vs GELU specifically.
         </p>
       </div>
     </PanelCard>
