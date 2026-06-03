@@ -16,9 +16,9 @@ const PRESETS: Config[] = [
   { name: 'Llama 3 8B',   paramsB: 8,     nLayers: 32,  dModel: 4096,  nHeads: 32,  nKvHeads: 8,  seqLen: 8192 },
   { name: 'Llama 3 70B',  paramsB: 70,    nLayers: 80,  dModel: 8192,  nHeads: 64,  nKvHeads: 8,  seqLen: 8192 },
   { name: 'Llama 3 405B', paramsB: 405,   nLayers: 126, dModel: 16384, nHeads: 128, nKvHeads: 8,  seqLen: 8192 },
-  // Qwen2.5: hidden=5120, q_heads=40, kv_heads=8, d_head=128
-  { name: 'Qwen2.5 14B',  paramsB: 14.7,  nLayers: 48,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 8192 },
-  { name: 'Qwen2.5 32B',  paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 8192 },
+  // Qwen3: native 32K context; 14B d_head=128, 32B d_head=80 (5120/64)
+  { name: 'Qwen3 14B',    paramsB: 14.8,  nLayers: 40,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 32768 },
+  { name: 'Qwen3 32B',    paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 64,  nKvHeads: 8,  seqLen: 32768 },
 ]
 
 function fmt(bytes: number): string {
