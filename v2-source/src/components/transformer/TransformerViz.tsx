@@ -19,28 +19,6 @@ type SelectedModule =
 
 // ─── Small helpers ───────────────────────────────────────────────────────────
 
-function RadioGroup<T extends string>({ label, value, onChange, options }: {
-  label: string; value: T; onChange: (v: T) => void
-  options: { value: T; label: string }[]
-}) {
-  return (
-    <div>
-      <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} onClick={() => onChange(o.value)}
-            className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
-            style={value === o.value
-              ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
-              : { color: 'var(--text)', borderColor: 'var(--border)' }}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function Arrow() {
   return (
     <div className="flex justify-center my-1" style={{ color: 'var(--border)' }}>
@@ -180,26 +158,45 @@ function AttnHeatmap({ weights, tokens, colorFn }: {
 
 // ─── PE Panel ────────────────────────────────────────────────────────────────
 
-function SinusoidalPanel({ tokens, colors }: { tokens: string[]; colors: ColorFns }) {
+function PEPanel({ posType, onPosTypeChange, tokens, colors }: {
+  posType: PosEncType; onPosTypeChange: (t: PosEncType) => void
+  tokens: string[]; colors: ColorFns
+}) {
   const pe = useMemo(() => sinusoidalPE(tokens.length), [tokens.length])
+  const freqs = useMemo(() => ropeFreqs(), [])
+  const showcasePairs = [0, 4, 15]
   return (
-    <PanelCard title="Sinusoidal Positional Encoding">
-      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-        Pipeline: H₀ (embedding output) → <span style={{ color: 'var(--accent)' }}>H₀ + PE</span> → Layer 1
+    <PanelCard title="Positional Encoding">
+      <div className="flex gap-2">
+        {(['sinusoidal', 'rope'] as const).map(t => (
+          <button key={t} onClick={() => onPosTypeChange(t)}
+            className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
+            style={posType === t
+              ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
+              : { color: 'var(--text)', borderColor: 'var(--border)' }}>
+            {t === 'sinusoidal' ? 'Sinusoidal (GPT-2, BERT)' : 'RoPE (Llama, Qwen)'}
+          </button>
+        ))}
       </div>
-      <Info>
-        Attention computes dot products between all token pairs — it has no built-in
-        sense of order. Without position info, "cat sat on mat" and "mat on sat cat"
-        look identical. Sinusoidal PE fixes this by adding a unique fixed vector to
-        each position before anything else runs. It is computed once, never learned.
-      </Info>
-      <Formula>
-        PE[pos, 2i]   = sin(pos / 10000^(2i / d_model))<br />
-        PE[pos, 2i+1] = cos(pos / 10000^(2i / d_model))<br />
-        <br />
-        H = H₀ + PE   ← element-wise, same shape (seq_len × d_model)
-      </Formula>
-      <CodeBlock code={`def sinusoidal_pe(seq_len, d_model):
+
+      {posType === 'sinusoidal' ? (
+        <>
+          <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+            Pipeline: H₀ (embedding output) → <span style={{ color: 'var(--accent)' }}>H₀ + PE</span> → Layer 1
+          </div>
+          <Info>
+            Attention computes dot products between all token pairs — it has no built-in
+            sense of order. Without position info, "cat sat on mat" and "mat on sat cat"
+            look identical. Sinusoidal PE fixes this by adding a unique fixed vector to
+            each position before anything else runs. It is computed once, never learned.
+          </Info>
+          <Formula>
+            PE[pos, 2i]   = sin(pos / 10000^(2i / d_model))<br />
+            PE[pos, 2i+1] = cos(pos / 10000^(2i / d_model))<br />
+            <br />
+            H = H₀ + PE   ← element-wise, same shape (seq_len × d_model)
+          </Formula>
+          <CodeBlock code={`def sinusoidal_pe(seq_len, d_model):
     pe  = torch.zeros(seq_len, d_model)
     pos = torch.arange(seq_len).unsqueeze(1)        # (seq_len, 1)
     div = torch.exp(torch.arange(0, d_model, 2) *
@@ -208,23 +205,91 @@ function SinusoidalPanel({ tokens, colors }: { tokens: string[]; colors: ColorFn
     pe[:, 1::2] = torch.cos(pos * div)
     return pe   # (seq_len, d_model), no parameters
 
-# coming from the embedding step:
-# H0.shape → (6, 4096)
 pe = sinusoidal_pe(seq_len=6, d_model=4096)  # (6, 4096)
 H  = H0 + pe                                  # (6, 4096)`} />
-      <div>
-        <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          PE matrix for your input — rows=positions, cols=dimensions (blue=positive, red=negative).
-          Each row is unique so every position gets a distinct signal:
-        </p>
-        <div className="overflow-x-auto">
-          <PEHeatmap data={pe} rowLabels={tokens} colorFn={colors.pe} />
-        </div>
-        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-          Left columns oscillate fast (high frequency), right columns oscillate slowly.
-          The combination makes every position uniquely identifiable.
-        </p>
-      </div>
+          <div>
+            <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+              PE matrix for your input — rows=positions, cols=dimensions (blue=positive, red=negative).
+              Each row is unique so every position gets a distinct signal:
+            </p>
+            <div className="overflow-x-auto">
+              <PEHeatmap data={pe} rowLabels={tokens} colorFn={colors.pe} />
+            </div>
+            <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+              Left columns oscillate fast (high frequency), right columns oscillate slowly.
+              The combination makes every position uniquely identifiable.
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+            Pipeline: H (after embedding) → Layer 1 → <span style={{ color: 'var(--accent)' }}>rotate Q & K with RoPE</span> → attention
+          </div>
+          <Info>
+            Unlike sinusoidal PE, RoPE is not added to the embeddings. Instead, inside every
+            attention layer, after computing Q and K from the hidden state, each Q and K vector
+            is rotated in 2D subspaces by an angle that depends on the token's position. The
+            dot product Q·Kᵀ then naturally depends only on the relative distance between
+            positions, not their absolute values.
+          </Info>
+          <Formula>
+            θ_i = 1 / 10000^(2i / d_model)   ← base frequency per dim pair i<br />
+            <br />
+            q_m = rotate(W_q · h_m,  m · [θ₀, θ₁, ..., θ_k])   k = d/2<br />
+            k_n = rotate(W_k · h_n,  n · [θ₀, θ₁, ..., θ_k])<br />
+            <br />
+            q_m · k_n  depends only on (m - n)
+          </Formula>
+          <CodeBlock code={`def precompute_freqs(d_head, max_seq=4096, base=10000):
+    i     = torch.arange(0, d_head, 2).float()
+    theta = 1.0 / (base ** (i / d_head))
+    freqs = torch.outer(torch.arange(max_seq).float(), theta)
+    return torch.polar(torch.ones_like(freqs), freqs)  # complex
+
+def apply_rope(x, freqs_cis):
+    # x: (batch, seq_len, n_heads, d_head)
+    x_c = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
+    out = torch.view_as_real(x_c * freqs_cis).flatten(-2)
+    return out.type_as(x)`} />
+          <div>
+            <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+              Rotation frequency θ_i per dimension pair — fast for early dims, near-zero for late:
+            </p>
+            <div className="overflow-x-auto">
+              <svg width={freqs.length * 19 + 40} height={80} style={{ display: 'block' }}>
+                {freqs.map((θ, i) => {
+                  const logVal = Math.log10(θ)
+                  const barH = Math.max(2, ((logVal + 4) / 4) * 60)
+                  return (
+                    <g key={i}>
+                      <rect x={40 + i * 19} y={65 - barH} width={16} height={barH}
+                        fill="var(--accent)" opacity={0.4 + (1 - i / freqs.length) * 0.6} rx={1} />
+                      {i % 4 === 0 && (
+                        <text x={40 + i * 19 + 8} y={78} textAnchor="middle" fontSize={8} fill="var(--text-muted)">{i}</text>
+                      )}
+                    </g>
+                  )
+                })}
+                <text x={2} y={68} fontSize={8} fill="var(--text-muted)">slow</text>
+                <text x={2} y={8} fontSize={8} fill="var(--text-muted)">fast</text>
+                <line x1={38} y1={0} x2={38} y2={70} stroke="var(--border)" strokeWidth={0.5} />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+              Token positions in 3 sample dim pairs after rotation (numbers = token index):
+            </p>
+            <div className="flex gap-4 flex-wrap">
+              {showcasePairs.map(i => (
+                <RopeCompass key={i} theta={freqs[i]} tokens={tokens}
+                  label={`pair ${i}: θ=${freqs[i].toFixed(4)}`} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </PanelCard>
   )
 }
@@ -257,84 +322,6 @@ function RopeCompass({ theta, tokens, label }: { theta: number; tokens: string[]
       </svg>
       <p className="font-mono text-xs text-center mt-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
     </div>
-  )
-}
-
-function RoPEPanel({ tokens }: { tokens: string[] }) {
-  const freqs = useMemo(() => ropeFreqs(), [])
-  const showcasePairs = [0, 4, 15]
-  return (
-    <PanelCard title="Rotary Position Embedding (RoPE)">
-      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-        Pipeline: H (after embedding) → Layer 1 → <span style={{ color: 'var(--accent)' }}>rotate Q & K with RoPE</span> → attention
-      </div>
-      <Info>
-        Unlike sinusoidal PE, RoPE is not added to the embeddings. Instead, inside every
-        attention layer, after computing Q and K from the hidden state, each Q and K vector
-        is rotated in 2D subspaces by an angle that depends on the token's position. The
-        dot product Q·Kᵀ then naturally depends only on the relative distance between
-        positions, not their absolute values.
-      </Info>
-      <Formula>
-        θ_i = 1 / 10000^(2i / d_model)   ← base frequency per dim pair i<br />
-        <br />
-        q_m = rotate(W_q · h_m,  m · [θ₀, θ₁, ..., θ_k])   k = d/2<br />
-        k_n = rotate(W_k · h_n,  n · [θ₀, θ₁, ..., θ_k])<br />
-        <br />
-        q_m · k_n  depends only on (m - n)
-      </Formula>
-      <CodeBlock code={`# precompute rotation frequencies (done once, outside the loop)
-def precompute_freqs(d_head, max_seq=4096, base=10000):
-    i     = torch.arange(0, d_head, 2).float()
-    theta = 1.0 / (base ** (i / d_head))          # (d_head/2,)
-    pos   = torch.arange(max_seq).float()          # (max_seq,)
-    freqs = torch.outer(pos, theta)                # (max_seq, d_head/2)
-    return torch.polar(torch.ones_like(freqs), freqs)  # complex
-
-# inside each attention layer, applied to Q and K (not the embeddings)
-def apply_rope(x, freqs_cis):
-    # x: (batch, seq_len, n_heads, d_head)
-    x_c = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
-    out = torch.view_as_real(x_c * freqs_cis).flatten(-2)
-    return out.type_as(x)`} />
-      <div>
-        <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Rotation frequency θ_i per dimension pair — fast for early dims, near-zero for late:
-        </p>
-        <div className="overflow-x-auto">
-          <svg width={freqs.length * 19 + 40} height={80} style={{ display: 'block' }}>
-            {freqs.map((θ, i) => {
-              const logVal = Math.log10(θ)
-              const barH = Math.max(2, ((logVal + 4) / 4) * 60)
-              return (
-                <g key={i}>
-                  <rect x={40 + i * 19} y={65 - barH} width={16} height={barH}
-                    fill="var(--accent)" opacity={0.4 + (1 - i / freqs.length) * 0.6} rx={1} />
-                  {i % 4 === 0 && (
-                    <text x={40 + i * 19 + 8} y={78} textAnchor="middle" fontSize={8} fill="var(--text-muted)">{i}</text>
-                  )}
-                </g>
-              )
-            })}
-            <text x={2} y={68} fontSize={8} fill="var(--text-muted)">slow</text>
-            <text x={2} y={8} fontSize={8} fill="var(--text-muted)">fast</text>
-            <line x1={38} y1={0} x2={38} y2={70} stroke="var(--border)" strokeWidth={0.5} />
-          </svg>
-        </div>
-      </div>
-      <div>
-        <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Where each token lands in 3 dim pairs after rotation (numbers = token index).
-          Fast pairs spread tokens apart; slow pairs keep them close:
-        </p>
-        <div className="flex gap-4 flex-wrap">
-          {showcasePairs.map(i => (
-            <RopeCompass key={i} theta={freqs[i]} tokens={tokens}
-              label={`pair ${i}: θ=${freqs[i].toFixed(4)}`} />
-          ))}
-        </div>
-      </div>
-    </PanelCard>
   )
 }
 
@@ -405,9 +392,9 @@ function GQADiagram({ selectedHead, onSelect }: { selectedHead: number; onSelect
   )
 }
 
-function AttnPanel({ attnType, tokens, weightsPerHead, layerIdx }: {
-  attnType: AttnType; tokens: string[]
-  weightsPerHead: number[][][]; layerIdx: number
+function AttnPanel({ attnType, onAttnTypeChange, tokens, weightsPerHead, layerIdx }: {
+  attnType: AttnType; onAttnTypeChange: (t: AttnType) => void
+  tokens: string[]; weightsPerHead: number[][][]; layerIdx: number
 }) {
   const [selectedHead, setSelectedHead] = useState(0)
   const { theme } = useTheme()
@@ -416,6 +403,17 @@ function AttnPanel({ attnType, tokens, weightsPerHead, layerIdx }: {
 
   return (
     <PanelCard title={`Self-Attention · Layer ${layerIdx}`}>
+      <div className="flex gap-2">
+        {(['mha', 'gqa'] as const).map(t => (
+          <button key={t} onClick={() => onAttnTypeChange(t)}
+            className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
+            style={attnType === t
+              ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
+              : { color: 'var(--text)', borderColor: 'var(--border)' }}>
+            {t === 'mha' ? 'Multi-Head (MHA)' : 'Grouped Query (GQA)'}
+          </button>
+        ))}
+      </div>
       <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
         Pipeline: H (prev layer) → <span style={{ color: 'var(--accent)' }}>self-attention</span> → Add &amp; Norm → FFN
       </div>
@@ -829,8 +827,9 @@ H0 = embedding(ids)   # just grabs rows, no multiply
 
 // ─── Sampling Panel ──────────────────────────────────────────────────────────
 
-function SamplingPanel({ type, topK, topP, temperature, data, onTopK, onTopP, onTemperature }: {
-  type: SamplingType; topK: number; topP: number; temperature: number
+function SamplingPanel({ type, onTypeChange, topK, topP, temperature, data, onTopK, onTopP, onTemperature }: {
+  type: SamplingType; onTypeChange: (t: SamplingType) => void
+  topK: number; topP: number; temperature: number
   data: SampleEntry[]
   onTopK: (k: number) => void
   onTopP: (p: number) => void
@@ -846,6 +845,17 @@ function SamplingPanel({ type, topK, topP, temperature, data, onTopK, onTopP, on
 
   return (
     <PanelCard title="Sampling Strategy">
+      <div className="flex gap-2">
+        {(['greedy', 'topk', 'topp'] as const).map(t => (
+          <button key={t} onClick={() => onTypeChange(t)}
+            className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
+            style={type === t
+              ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
+              : { color: 'var(--text)', borderColor: 'var(--border)' }}>
+            {t === 'greedy' ? 'Greedy' : t === 'topk' ? 'Top-k' : 'Top-p'}
+          </button>
+        ))}
+      </div>
       <Info>
         After the LM head produces logits, temperature is applied first, then a sampling
         strategy picks the next token. Temperature scales the logits before softmax:
@@ -1024,18 +1034,6 @@ export default function TransformerViz() {
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
-      <div className="grid sm:grid-cols-3 gap-6 p-5 rounded-lg border"
-        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
-        <RadioGroup label="Position Encoding" value={posType} onChange={v => { setPosType(v); setSelected('pos-enc') }}
-          options={[{ value: 'sinusoidal', label: 'Sinusoidal' }, { value: 'rope', label: 'RoPE' }]} />
-        <RadioGroup label="Attention Type" value={attnType}
-          onChange={v => { setAttnType(v); if (selected?.includes('attn')) setSelected(selected) }}
-          options={[{ value: 'mha', label: 'MHA' }, { value: 'gqa', label: 'GQA' }]} />
-        <RadioGroup label="Sampling" value={samplingType} onChange={v => { setSamplingType(v); setSelected('sampling') }}
-          options={[{ value: 'greedy', label: 'Greedy' }, { value: 'topk', label: 'Top-k' }, { value: 'topp', label: 'Top-p' }]} />
-      </div>
-
       {/* Token input */}
       <div>
         <label className="font-mono text-xs mb-2 block" style={{ color: 'var(--text-muted)' }}>
@@ -1106,11 +1104,11 @@ export default function TransformerViz() {
               transition={{ duration: 0.18 }}>
               {selected === null && <DefaultPanel />}
               {selected === 'embedding' && <EmbeddingPanel tokens={tokens} />}
-              {selected === 'pos-enc' && (posType === 'sinusoidal'
-                ? <SinusoidalPanel tokens={tokens} colors={colors} />
-                : <RoPEPanel tokens={tokens} />)}
+              {selected === 'pos-enc' && (
+                <PEPanel posType={posType} onPosTypeChange={setPosType} tokens={tokens} colors={colors} />
+              )}
               {(selected === 'layer1-attn' || selected === 'layer2-attn') && (
-                <AttnPanel attnType={attnType} tokens={tokens}
+                <AttnPanel attnType={attnType} onAttnTypeChange={setAttnType} tokens={tokens}
                   weightsPerHead={selected === 'layer1-attn' ? weightsL1 : weightsL2}
                   layerIdx={selected === 'layer1-attn' ? 1 : 2} />
               )}
@@ -1119,8 +1117,8 @@ export default function TransformerViz() {
               )}
               {selected === 'lm-head' && <LMHeadPanel />}
               {selected === 'sampling' && (
-                <SamplingPanel type={samplingType} topK={topK} topP={topP}
-                  temperature={temperature} data={samples}
+                <SamplingPanel type={samplingType} onTypeChange={setSamplingType}
+                  topK={topK} topP={topP} temperature={temperature} data={samples}
                   onTopK={setTopK} onTopP={setTopP} onTemperature={setTemperature} />
               )}
             </motion.div>
