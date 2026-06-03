@@ -575,6 +575,8 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
             ))}
           </div>
           <Formula>
+            GELU(x) = x · 0.5 · (1 + tanh(√(2/π) · (x + 0.044715x³)))<br />
+            <br />
             FFN(x) = GELU(x @ W₁) @ W₂<br />
             params = 2 × d_model × 4·d_model = 8·d_model²
           </Formula>
@@ -620,6 +622,8 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
             </div>
           </div>
           <Formula>
+            SiLU(x) = x · sigmoid(x) = x / (1 + e^(-x))<br />
+            <br />
             FFN(x) = (x @ W_up  ⊙  SiLU(x @ W_gate)) @ W_down<br />
             params = 3 × d_model × (8/3)·d_model = 8·d_model²  (same as GELU FFN)
           </Formula>
