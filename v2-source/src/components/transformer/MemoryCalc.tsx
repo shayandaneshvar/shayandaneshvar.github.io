@@ -8,6 +8,7 @@ interface Config {
   nHeads: number
   nKvHeads: number
   seqLen: number
+  dHeadOverride?: number  // set when head_dim != dModel/nHeads (e.g. Qwen3-32B)
 }
 
 const PRESETS: Config[] = [
@@ -16,9 +17,10 @@ const PRESETS: Config[] = [
   { name: 'Llama 3 8B',   paramsB: 8,     nLayers: 32,  dModel: 4096,  nHeads: 32,  nKvHeads: 8,  seqLen: 8192 },
   { name: 'Llama 3 70B',  paramsB: 70,    nLayers: 80,  dModel: 8192,  nHeads: 64,  nKvHeads: 8,  seqLen: 8192 },
   { name: 'Llama 3 405B', paramsB: 405,   nLayers: 126, dModel: 16384, nHeads: 128, nKvHeads: 8,  seqLen: 8192 },
-  // Qwen3: native 32K context; 14B d_head=128, 32B d_head=80 (5120/64)
+  // Qwen3: trained on 32K, extendable to 128K via YaRN. 32B sets head_dim=128 explicitly
+  // (config max_position_embeddings=40960 is the RoPE table size, not the training context).
   { name: 'Qwen3 14B',    paramsB: 14.8,  nLayers: 40,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 32768 },
-  { name: 'Qwen3 32B',    paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 64,  nKvHeads: 8,  seqLen: 32768 },
+  { name: 'Qwen3 32B',    paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 64,  nKvHeads: 8,  seqLen: 32768, dHeadOverride: 128 },
 ]
 
 function fmt(bytes: number): string {
@@ -107,8 +109,8 @@ export default function MemoryCalc() {
   }
 
   const dHead = useMemo(
-    () => Math.max(1, Math.floor(cfg.dModel / Math.max(1, cfg.nHeads))),
-    [cfg.dModel, cfg.nHeads]
+    () => cfg.dHeadOverride ?? Math.max(1, Math.floor(cfg.dModel / Math.max(1, cfg.nHeads))),
+    [cfg.dModel, cfg.nHeads, cfg.dHeadOverride]
   )
   const kvHeads = Math.min(cfg.nKvHeads, cfg.nHeads)
   const params = cfg.paramsB * 1e9
