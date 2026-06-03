@@ -79,6 +79,15 @@ export default function BlogTransformerViz() {
               the difference is tens of gigabytes.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              There is a separate scaling problem with context length: naive attention computes
+              a seq_len × seq_len score matrix, so memory grows quadratically. Doubling context
+              length quadruples the memory needed to store those scores. FlashAttention sidesteps
+              this by never materializing the full matrix. It computes attention in tiles that
+              fit in fast on-chip SRAM, keeping memory linear in sequence length. Compute is
+              still O(n²) in FLOPs either way, but the memory bottleneck is gone, which is what
+              makes 128K+ contexts feasible on real hardware.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
               One important limitation: in a multi-turn conversation, each new turn typically
               recomputes the KV cache from scratch over the full conversation history. If your
               system prompt is 10K tokens and you have 50 tool call steps, you are paying that
