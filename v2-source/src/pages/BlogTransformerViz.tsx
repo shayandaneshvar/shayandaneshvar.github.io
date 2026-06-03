@@ -78,6 +78,26 @@ export default function BlogTransformerViz() {
               is 4x smaller than MHA with no meaningful quality loss. At 128K context windows
               the difference is tens of gigabytes.
             </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              One important limitation: in a multi-turn conversation, each new turn typically
+              recomputes the KV cache from scratch over the full conversation history. If your
+              system prompt is 10K tokens and you have 50 tool call steps, you are paying that
+              recompute cost 50 times.
+            </p>
+            <p className="text-sm font-medium mt-2" style={{ color: 'var(--text-bright)' }}>Prefix caching</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              Prefix caching solves this. If the token sequence at the start of a new request
+              exactly matches a previously computed one, the inference server reuses the stored
+              KV cache for that prefix instead of recomputing it. A 32K system prompt that is
+              identical across all requests gets computed once. Only the new tokens after the
+              prefix need fresh computation.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+              vLLM supports this via automatic prefix caching (enabled by default in recent
+              versions). SGLang takes it further with RadixAttention, which organizes the KV
+              cache as a radix tree and can match and reuse any shared prefix across concurrent
+              requests, not just system prompts.
+            </p>
           </div>
         </div>
 
