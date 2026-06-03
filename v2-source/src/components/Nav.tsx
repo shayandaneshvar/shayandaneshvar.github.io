@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 
 const navLinks = [
@@ -37,12 +37,23 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { theme, toggle } = useTheme()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  const goToSection = (section: string) => {
+    if (isHome) {
+      scrollTo(section)
+    } else {
+      navigate('/', { state: { scrollTo: section } })
+    }
+  }
 
   return (
     <>
@@ -72,7 +83,7 @@ export default function Nav() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * i + 0.3 }}
-                  onClick={() => scrollTo(section)}
+                  onClick={() => goToSection(section)}
                   style={{ color: 'var(--text-bright)' }}
                   className="text-sm hover:opacity-70 transition-opacity"
                 >
@@ -150,7 +161,7 @@ export default function Nav() {
               {navLinks.map(({ label, section }) => (
                 <li key={label}>
                   <button
-                    onClick={() => { scrollTo(section); setMenuOpen(false) }}
+                    onClick={() => { goToSection(section); setMenuOpen(false) }}
                     style={{ color: 'var(--text-bright)' }}
                     className="text-lg hover:opacity-70 transition-opacity"
                   >

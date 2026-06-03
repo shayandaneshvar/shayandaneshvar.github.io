@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import Nav from '../components/Nav'
 import Hero from '../components/Hero'
 import About from '../components/About'
@@ -10,6 +12,18 @@ import Contact from '../components/Contact'
 import Footer from '../components/Footer'
 
 export default function HomePage() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const section = (location.state as { scrollTo?: string } | null)?.scrollTo
+    if (section) {
+      // Wait for the page to render before scrolling to the target section.
+      requestAnimationFrame(() => {
+        document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' })
+      })
+    }
+  }, [location.state])
+
   return (
     <div className="relative">
       <Nav />
