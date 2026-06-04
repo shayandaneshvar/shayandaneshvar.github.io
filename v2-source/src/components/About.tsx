@@ -6,10 +6,10 @@ const skills = [
   'Python', 'PyTorch', 'Transformers', 'vLLM',
   'LLaMA-Factory', 'Megatron-LM', 'Ray',
   'Docker', 'Kubernetes', 'Apache Kafka',
-  'AWS EC2', 'Java',
+  'AWS EC2', 'Java', 'Spring Framework', 'MongoDB', 'Postgres'
 ]
 
-const photos = ['/photo1.jpg', '/photo4.jpg']
+const photos = ['/photo4.jpg','/photo2.jpg', '/photo3.jpg','/photo5.jpg','/photo1.jpg']
 
 export default function About() {
   const ref = useRef(null)
