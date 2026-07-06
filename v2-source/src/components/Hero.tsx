@@ -14,6 +14,26 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, delay },
 })
 
+const email = 'daneshvarshayan@gmail.com'
+
+const socialLinks = [
+  {
+    label: 'GitHub',
+    href: 'https://github.com/shayandaneshvar',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>,
+  },
+  {
+    label: 'LinkedIn',
+    href: 'https://ca.linkedin.com/in/shayanda',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
+  },
+  {
+    label: 'Google Scholar',
+    href: 'https://scholar.google.ca/citations?user=NVHzLg0AAAAJ',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 24a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-24L0 9.5l4.838 3.94A8 8 0 0 1 12 10a8 8 0 0 1 7.162 3.44L24 9.5z"/></svg>,
+  },
+]
+
 export default function Hero() {
   const [roleIndex, setRoleIndex] = useState(0)
 
@@ -78,28 +98,36 @@ export default function Hero() {
         </button>
       </motion.div>
 
+      {/* Inline social + email row — fallback for screens too narrow for the fixed sidebars */}
+      <motion.div
+        {...fadeUp(0.6)}
+        className="flex min-[1100px]:hidden items-center gap-6 mt-12"
+      >
+        {socialLinks.map(({ label, href, icon }) => (
+          <a key={href} href={href} target="_blank" rel="noreferrer" aria-label={label}
+            style={{ color: 'var(--text)' }}
+            className="hover:opacity-60 hover:-translate-y-1 transition-all duration-200">
+            {icon}
+          </a>
+        ))}
+        <a
+          href={`mailto:${email}`}
+          style={{ color: 'var(--text)' }}
+          className="font-mono text-sm hover:opacity-60 transition-opacity break-all"
+        >
+          {email}
+        </a>
+      </motion.div>
+
       {/* Social sidebar */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.5 }}
-        className="fixed left-6 bottom-0 hidden xl:flex flex-col items-center gap-5"
+        className="fixed left-6 bottom-0 hidden min-[1100px]:flex flex-col items-center gap-5"
       >
-        {[
-          {
-            href: 'https://github.com/shayandaneshvar',
-            icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>,
-          },
-          {
-            href: 'https://ca.linkedin.com/in/shayanda',
-            icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
-          },
-          {
-            href: 'https://scholar.google.ca/citations?user=NVHzLg0AAAAJ',
-            icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 24a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-24L0 9.5l4.838 3.94A8 8 0 0 1 12 10a8 8 0 0 1 7.162 3.44L24 9.5z"/></svg>,
-          },
-        ].map(({ href, icon }) => (
-          <a key={href} href={href} target="_blank" rel="noreferrer"
+        {socialLinks.map(({ label, href, icon }) => (
+          <a key={href} href={href} target="_blank" rel="noreferrer" aria-label={label}
             style={{ color: 'var(--text)' }}
             className="hover:opacity-60 hover:-translate-y-1 transition-all duration-200">
             {icon}
@@ -113,13 +141,13 @@ export default function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.5 }}
-        className="fixed right-6 bottom-0 hidden xl:flex flex-col items-center gap-5"
+        className="fixed right-6 bottom-0 hidden min-[1100px]:flex flex-col items-center gap-5"
       >
         <a
-          href="mailto:daneshvarshayan@gmail.com"
+          href={`mailto:${email}`}
           style={{ writingMode: 'vertical-rl', color: 'var(--text)' } as React.CSSProperties}
         >
-          daneshvarshayan@gmail.com
+          {email}
         </a>
         <div style={{ backgroundColor: 'var(--border)' }} className="w-px h-24" />
       </motion.div>
