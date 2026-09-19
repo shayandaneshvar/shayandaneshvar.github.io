@@ -2,20 +2,7 @@ import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import SectionHeading from './SectionHeading'
-
-const posts = [
-  {
-    title: 'Transformer Architecture Explorer',
-    description:
-      'Interactive decoder-only transformer visualizer. Switch between sinusoidal and RoPE positional encodings, compare multi-head vs grouped-query attention, explore different sampling strategies. Click any module to see its internals.',
-    tags: ['Transformers', 'LLMs', 'Interactive', 'Visualization'],
-    date: 'Jun 2026',
-    href: '/blog/transformer-visualization',
-    live: true,
-  },
-]
-
-const upcoming = ['LLM Post-training Deep Dive', 'Training Dynamics & Loss Curves', 'vLLM Inference Internals']
+import { posts, upcoming } from '../blog/posts'
 
 export default function Blog() {
   const ref = useRef(null)
@@ -32,11 +19,11 @@ export default function Blog() {
         <div className="space-y-6">
           {posts.map((post, i) => (
             <motion.div
-              key={post.title}
+              key={post.slug}
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: i * 0.1 }}>
-              <Link to={post.href}
+              <Link to={`/blog/${post.slug}`}
                 className="block rounded-lg border p-6 transition-all duration-300 hover:-translate-y-0.5 group"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
                 <div className="flex items-start justify-between gap-4">

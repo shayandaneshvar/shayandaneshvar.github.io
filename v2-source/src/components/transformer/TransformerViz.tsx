@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../../context/ThemeContext'
 import {
@@ -104,7 +104,7 @@ function PEHeatmap({ data, rowLabels, colorFn }: {
     <svg width={svgW} height={svgH} style={{ display: 'block' }}>
       {rowLabels.map((lbl, i) => (
         <text key={i} x={lW - 5} y={i * cH + cH * 0.75}
-          textAnchor="end" fontSize={10} fill="var(--text-muted)">{lbl}</text>
+          textAnchor="end" fontSize={10} fill="var(--text-muted)">{lbl.slice(0, 7)}</text>
       ))}
       {data.map((row, i) => row.map((val, j) => (
         <rect key={`${i}-${j}`}
@@ -119,6 +119,8 @@ function PEHeatmap({ data, rowLabels, colorFn }: {
 function AttnHeatmap({ weights, tokens, colorFn }: {
   weights: number[][]; tokens: string[]; colorFn: (v: number) => string
 }) {
+  const { theme } = useTheme()
+  const strongText = theme === 'dark' ? '#0d1117' : '#ffffff'
   const n = tokens.length
   const cs = Math.min(46, Math.floor(260 / Math.max(n, 1)))
   const lW = 38; const lH = 22
@@ -147,7 +149,7 @@ function AttnHeatmap({ weights, tokens, colorFn }: {
           <text key={`${i}-${j}-t`}
             x={lW + j * cs + cs / 2} y={lH + i * cs + cs / 2 + 4}
             textAnchor="middle" fontSize={cs > 36 ? 9 : 7}
-            fill={w > 0.4 ? '#0d1117' : 'var(--text-muted)'}>
+            fill={w > 0.4 ? strongText : 'var(--text-muted)'}>
             {w.toFixed(2)}
           </text>
         ) : null
@@ -167,14 +169,14 @@ function PEPanel({ posType, onPosTypeChange, tokens, colors }: {
   const showcasePairs = [0, 4, 15]
   return (
     <PanelCard title="Positional Encoding">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['sinusoidal', 'rope'] as const).map(t => (
           <button key={t} onClick={() => onPosTypeChange(t)}
             className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
             style={posType === t
               ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
               : { color: 'var(--text)', borderColor: 'var(--border)' }}>
-            {t === 'sinusoidal' ? 'Sinusoidal (GPT-2, BERT)' : 'RoPE (Llama, Qwen)'}
+            {t === 'sinusoidal' ? 'Sinusoidal (original Transformer)' : 'RoPE (Llama, Qwen)'}
           </button>
         ))}
       </div>
@@ -185,10 +187,15 @@ function PEPanel({ posType, onPosTypeChange, tokens, colors }: {
             Pipeline: H₀ (embedding output) → <span style={{ color: 'var(--accent)' }}>H₀ + PE</span> → Layer 1
           </div>
           <Info>
-            Attention computes dot products between all token pairs — it has no built-in
+            Attention computes dot products between all token pairs, so it has no built-in
             sense of order. Without position info, "cat sat on mat" and "mat on sat cat"
             look identical. Sinusoidal PE fixes this by adding a unique fixed vector to
             each position before anything else runs. It is computed once, never learned.
+          </Info>
+          <Info>
+            It comes from the original Transformer paper (Vaswani et al., 2017). GPT-2 and
+            BERT add a position vector the same way, but theirs is a learned embedding
+            table (one trainable row per position) rather than a fixed formula.
           </Info>
           <Formula>
             PE[pos, 2i]   = sin(pos / 10000^(2i / d_model))<br />
@@ -234,10 +241,10 @@ H  = H0 + pe                                  # (6, 4096)`} />
             positions, not their absolute values.
           </Info>
           <Formula>
-            θ_i = 1 / 10000^(2i / d_model)   ← base frequency per dim pair i<br />
+            θ_i = 1 / 10000^(2i / d_head)   ← base frequency per dim pair i<br />
             <br />
-            q_m = rotate(W_q · h_m,  m · [θ₀, θ₁, ..., θ_k])   k = d/2<br />
-            k_n = rotate(W_k · h_n,  n · [θ₀, θ₁, ..., θ_k])<br />
+            q_m = rotate(W_q · h_m,  m · [θ₀, θ₁, ..., θ_(k-1)])   k = d_head/2<br />
+            k_n = rotate(W_k · h_n,  n · [θ₀, θ₁, ..., θ_(k-1)])<br />
             <br />
             q_m · k_n  depends only on (m - n)
           </Formula>
@@ -254,7 +261,8 @@ def apply_rope(x, freqs_cis):
     return out.type_as(x)`} />
           <div>
             <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-              Rotation frequency θ_i per dimension pair — fast for early dims, near-zero for late:
+              Rotation frequency θ_i per dimension pair (drawn for a 32-dim head so there are
+              enough pairs to see). Fast for early dims, near-zero for late:
             </p>
             <div className="overflow-x-auto">
               <svg width={freqs.length * 19 + 40} height={80} style={{ display: 'block' }}>
@@ -329,7 +337,7 @@ function RopeCompass({ theta, tokens, label }: { theta: number; tokens: string[]
 
 function MHADiagram({ selectedHead, onSelect }: { selectedHead: number; onSelect: (h: number) => void }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       {Array.from({ length: N_HEADS }, (_, h) => (
         <button key={h} onClick={() => onSelect(h)}
           className="flex-1 rounded border p-2 text-center transition-all duration-150"
@@ -355,7 +363,7 @@ function GQADiagram({ selectedHead, onSelect }: { selectedHead: number; onSelect
   const kvGroupColor = (g: number) => g === 0 ? 'var(--accent)' : '#a78bfa'
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {Array.from({ length: N_HEADS }, (_, h) => (
           <button key={h} onClick={() => onSelect(h)}
             className="flex-1 rounded border p-2 text-center transition-all duration-150"
@@ -365,7 +373,7 @@ function GQADiagram({ selectedHead, onSelect }: { selectedHead: number; onSelect
             }}>
             <div className="font-mono text-xs font-semibold" style={{ color: groupColor(h) }}>Q{h}</div>
             <div className="font-mono text-xs" style={{ color: 'var(--text-muted)', fontSize: 9 }}>
-              → KV{Math.floor(h / N_KV_GQA)}
+              → KV{Math.floor(h / (N_HEADS / N_KV_GQA))}
             </div>
           </button>
         ))}
@@ -403,7 +411,7 @@ function AttnPanel({ attnType, onAttnTypeChange, tokens, weightsPerHead, layerId
 
   return (
     <PanelCard title={`Self-Attention · Layer ${layerIdx}`}>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['mha', 'gqa'] as const).map(t => (
           <button key={t} onClick={() => onAttnTypeChange(t)}
             className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
@@ -538,7 +546,7 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
 
   return (
     <PanelCard title={`Feed-Forward Network · Layer ${layerIdx}`}>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['gelu', 'swiglu'] as const).map(v => (
           <button key={v} onClick={() => setVariant(v)}
             className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
@@ -592,7 +600,7 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
             The intermediate size is scaled to 8/3 × d_model instead of 4× so the
             three-matrix parameter count equals the classic two-matrix count:
             3 × d_model × (8/3 × d_model) = 8 × d_model². In practice models round
-            this to a hardware-friendly multiple (Llama 3 8B uses 3.5×, Qwen3 uses 3.4×).
+            this to a hardware-friendly multiple (Llama 3 8B uses 3.5×, Qwen3 14B uses 3.4×).
           </Info>
           <div className="space-y-3">
             <div className="flex gap-2 items-start">
@@ -816,8 +824,9 @@ H0 = embedding(ids)   # just grabs rows, no multiply
           Each bar above is one element of the d_model-dimensional row vector for that token.
         </p>
         <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-          Positional encoding is added element-wise on top: H = H₀ + PE.
-          In many models (weight tying), E is reused transposed as the LM head — same
+          With sinusoidal or learned absolute positions, the position vector is added
+          element-wise on top: H = H₀ + PE. With RoPE nothing is added here; position is
+          applied later by rotating Q and K inside each attention layer. In many models (weight tying), E is reused transposed as the LM head — same
           matrix, two roles.
         </p>
       </div>
@@ -845,7 +854,7 @@ function SamplingPanel({ type, onTypeChange, topK, topP, temperature, data, onTo
 
   return (
     <PanelCard title="Sampling Strategy">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['greedy', 'topk', 'topp'] as const).map(t => (
           <button key={t} onClick={() => onTypeChange(t)}
             className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
@@ -1030,7 +1039,16 @@ export default function TransformerViz() {
   const { theme } = useTheme()
   const colors = useMemo(() => makeColors(theme === 'dark'), [theme])
 
-  const sel = (id: SelectedModule) => setSelected(prev => prev === id ? null : id)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const select = (m: SelectedModule) => {
+    setSelected(m)
+    // Below lg the layout stacks and the panel sits under the whole diagram, so a tap
+    // would otherwise change content off screen. Bring the panel into view.
+    if (m !== null && !window.matchMedia('(min-width: 1024px)').matches) {
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+  }
+  const sel = (id: SelectedModule) => select(selected === id ? null : id)
 
   return (
     <div className="space-y-6">
@@ -1075,10 +1093,10 @@ export default function TransformerViz() {
             onClick={() => sel('pos-enc')} />
           <Arrow />
           <LayerBlock layerIdx={1} attnType={attnType} selected={selected}
-            onSelect={setSelected} expanded={layer1Open} onToggle={() => setLayer1Open(v => !v)} />
+            onSelect={select} expanded={layer1Open} onToggle={() => setLayer1Open(v => !v)} />
           <Arrow />
           <LayerBlock layerIdx={2} attnType={attnType} selected={selected}
-            onSelect={setSelected} expanded={layer2Open} onToggle={() => setLayer2Open(v => !v)} />
+            onSelect={select} expanded={layer2Open} onToggle={() => setLayer2Open(v => !v)} />
           <Arrow />
           <ModuleBlock label="LM Head" badge="Unembedding" selected={selected === 'lm-head'}
             onClick={() => sel('lm-head')} />
@@ -1095,7 +1113,7 @@ export default function TransformerViz() {
         </div>
 
         {/* Right: detail panel */}
-        <div className="sticky top-24">
+        <div ref={panelRef} className="sticky top-24 scroll-mt-24">
           <AnimatePresence mode="wait">
             <motion.div key={selected ?? 'default'}
               initial={{ opacity: 0, y: 8 }}

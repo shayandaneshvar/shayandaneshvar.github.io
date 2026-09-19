@@ -170,7 +170,7 @@ export default function MemoryCalc() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['inference', 'training'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="font-mono text-xs px-4 py-2 rounded border capitalize transition-all duration-150"
@@ -194,7 +194,7 @@ export default function MemoryCalc() {
             <MemRow label="Weights (BF16)" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={inf_weights} total={inf_total} color={COLORS.weights} />
             <MemRow
-              label="KV cache (FP16)"
+              label="KV cache (BF16)"
               note={`${cfg.nLayers} layers × 2 (K+V) × ${cfg.seqLen.toLocaleString()} tokens × ${kvHeads} kv_heads × ${dHead} d_head × 2 bytes`}
               bytes={inf_kv} total={inf_total} color={COLORS.kv} />
             <MemRow label="Activations" note="one layer at a time, very small at inference"
