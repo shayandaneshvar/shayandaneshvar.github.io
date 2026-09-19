@@ -16,6 +16,16 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: '5d-parallelism',
+    title: '5D Parallelism: DP, TP, PP, CP and EP',
+    description:
+      'What each parallel dimension splits, what it communicates and where it belongs in a cluster, plus an interactive planner. Pick Qwen3 14B, 32B or a MoE, your GPU or NPU and node size, and get the valid layouts, how many devices you need, memory per device, training step time, and the throughput vs latency trade-off for serving.',
+    tags: ['Distributed Training', 'Inference', 'Parallelism', 'Interactive'],
+    date: 'Sep 2026',
+    live: true,
+    Component: lazy(() => import('../pages/BlogParallelism')),
+  },
+  {
     slug: 'transformer-visualization',
     title: 'Transformer Architecture Explorer',
     description:
