@@ -28,7 +28,7 @@ const pubs = [
     year: '2024',
     authors: 'Seyed Shayan Daneshvar, Shaowei Wang',
     doi: 'https://arxiv.org/pdf/2408.03507',
-    tags: ['YOLO', 'Object Detection', 'GUI', 'Computer Vision'],
+    tags: ['YOLO', 'Object Detection', 'GUI', 'Computer Vision', 'ML4SE'],
   },
   {
     title: 'The Application of Barcode Readable Assay and Linear Regression RGB Analysis Using a Customized Smartphone App in On-chip Electromembrane Extraction for Simultaneous Determination of Heavy Metal Ions',
@@ -37,7 +37,7 @@ const pubs = [
     year: '2024',
     authors: 'Neda Rezaei, Seyed Shayan Daneshvar, Behrooz Nasihatkon, Shahram Seidi, Maryam Rezazadeh',
     doi: 'https://www.sciencedirect.com/science/article/abs/pii/S0026265X23013218',
-    tags: ['Computer Vision', 'RGB Analysis', 'Android', 'Point-of-Care'],
+    tags: ['Computer Vision', 'RGB Analysis', 'Android', 'VGG', 'Barcode Detection', 'Outlier Detection', 'Linear Regression'],
   },
 ]
 

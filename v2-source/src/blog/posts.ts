@@ -21,7 +21,7 @@ export const posts: Post[] = [
     description:
       'What each parallel dimension splits, what it communicates and where it belongs in a cluster, plus an interactive planner. Pick Qwen3 14B, 32B or a MoE, your GPU or NPU and node size, and get the valid layouts, how many devices you need, memory per device, training step time, and the throughput vs latency trade-off for serving.',
     tags: ['Distributed Training', 'Inference', 'Parallelism', 'Interactive'],
-    date: 'Sep 2026',
+    date: 'Jul 2026',
     live: true,
     Component: lazy(() => import('../pages/BlogParallelism')),
   },

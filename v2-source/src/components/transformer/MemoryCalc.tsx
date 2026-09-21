@@ -92,6 +92,64 @@ function MemRow({ label, note, bytes, total, color }: {
   )
 }
 
+// The activation estimate is the one number here that looks arbitrary, so show its source.
+const ACT_TERMS: [string, string][] = [
+  ['Q, K, V matmul inputs (shared)', '2 sbh'],
+  ['Q and K matrices', '4 sbh'],
+  ['Values', '2 sbh'],
+  ['output projection input', '2 sbh'],
+  ['attention dropout mask (1 byte/element)', '1 sbh'],
+  ['first linear input', '2 sbh'],
+  ['GELU input', '8 sbh'],
+  ['second linear input', '8 sbh'],
+  ['MLP dropout mask (1 byte/element)', '1 sbh'],
+  ['two layer norms, inputs saved', '4 sbh'],
+]
+
+function ActivationNote() {
+  return (
+    <details className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+      <summary className="cursor-pointer" style={{ color: 'var(--text)' }}>
+        Where the 34 bytes per token per layer comes from
+      </summary>
+      <div className="mt-2 space-y-2 leading-relaxed">
+        <p>
+          From{' '}
+          <a href="https://arxiv.org/abs/2205.05198" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
+            Korthikanti et al. 2022, "Reducing Activation Recomputation in Large Transformer Models"
+          </a>. It is not measured, it is the sum of every tensor one layer has to keep for the
+          backward pass, each written as a multiple of s·b·h (sequence × batch × d_model) at 2 bytes
+          per element, except dropout masks at 1 byte:
+        </p>
+        <div className="space-y-0.5">
+          {ACT_TERMS.map(([label, size]) => (
+            <div key={label} className="flex justify-between gap-4">
+              <span>{label}</span>
+              <span className="shrink-0" style={{ color: 'var(--text)' }}>{size}</span>
+            </div>
+          ))}
+          <div className="flex justify-between gap-4 pt-1 mt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+            <span style={{ color: 'var(--text-bright)' }}>attention 11 + MLP 19 + norms 4</span>
+            <span className="shrink-0 font-semibold" style={{ color: 'var(--accent)' }}>34 sbh</span>
+          </div>
+        </div>
+        <p>
+          The GELU terms are 8 rather than 2 because the intermediate is 4× wider than d_model.
+          The paper's full result is sbh(34 + 5as/h); the second term is the attention score matrix
+          and its dropout mask, which grows with the square of sequence length. It is left out here
+          because FlashAttention never stores that matrix, it recomputes it in the backward pass.
+        </p>
+        <p>
+          34 describes a GPT-3 style layer: multi-head attention, a 4× GELU MLP, dropout on. Models
+          with SwiGLU and no dropout, like Llama 3 and Qwen3, keep more intermediate tensors and land
+          nearer 40. Gradient checkpointing replaces all of it with just the layer inputs, at the cost
+          of a second forward pass.
+        </p>
+      </div>
+    </details>
+  )
+}
+
 export default function MemoryCalc() {
   const [selectedPreset, setSelectedPreset] = useState(2)
   const [cfg, setCfg] = useState<Config>(PRESETS[2])
@@ -132,7 +190,7 @@ export default function MemoryCalc() {
   const tr_adam_v = params * 4
   // Activation memory without gradient checkpointing.
   // Formula: 34 × L × B × S × H bytes (Korthikanti et al. 2022, TP=1 approximation)
-  // Does not include the quadratic-in-seq attention term — accurate for short-to-medium sequences.
+  // Does not include the quadratic-in-seq attention term, so it is accurate for short-to-medium sequences.
   const tr_act = cfg.nLayers * batchSize * cfg.seqLen * cfg.dModel * 34
   const tr_no_act = tr_fp16_weights + tr_fp16_grads + tr_fp32_master + tr_adam_m + tr_adam_v
   const tr_total = tr_no_act + tr_act
@@ -205,7 +263,7 @@ export default function MemoryCalc() {
                 <span className="font-mono text-xl font-bold" style={{ color: 'var(--accent)' }}>{fmt(inf_total)}</span>
               </div>
               <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                KV cache per token: {fmt(inf_kv_per_token)} — with a full {cfg.seqLen.toLocaleString()}-token context that is {fmt(inf_kv)}.
+                KV cache per token: {fmt(inf_kv_per_token)}, so a full {cfg.seqLen.toLocaleString()}-token context is {fmt(inf_kv)}.
                 {kvHeads < cfg.nHeads && ` GQA (${kvHeads} KV heads vs ${cfg.nHeads} Q heads) saves ${(cfg.nHeads / kvHeads).toFixed(0)}× vs MHA here.`}
               </p>
             </div>
@@ -215,13 +273,13 @@ export default function MemoryCalc() {
             <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
               Mixed precision: BF16 forward/backward (same range as FP32, no loss scaling needed),
               FP32 master weights and optimizer states (AdamW).
-              Activations without gradient checkpointing — enabling checkpointing trades compute for memory.
+              Activations without gradient checkpointing; enabling it trades compute for memory.
             </p>
             <MemRow label="BF16 weights" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={tr_fp16_weights} total={tr_total} color={COLORS.weights} />
             <MemRow label="BF16 gradients" note={`${cfg.paramsB}B params × 2 bytes`}
               bytes={tr_fp16_grads} total={tr_total} color={COLORS.grads} />
-            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes — BF16 has only 7 mantissa bits so tiny updates (grad × lr ≈ 1e-7) still round to zero; FP32 keeps them`}
+            <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes. BF16 has only 7 mantissa bits, so a tiny update (grad × lr ≈ 1e-7) added to a weight near 1.0 rounds straight back to that weight and is lost. The FP32 copy is the accumulator that keeps those fractions between steps`}
               bytes={tr_fp32_master} total={tr_total} color={COLORS.master} />
             <MemRow label="Adam first moment (m)" note={`${cfg.paramsB}B params × 4 bytes (FP32)`}
               bytes={tr_adam_m} total={tr_total} color={COLORS.adamM} />
@@ -246,9 +304,10 @@ export default function MemoryCalc() {
               </div>
               <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
                 {bytesPerParam.toFixed(1)} bytes per parameter for model + optimizer
-                (rule of thumb: 16 bytes/param — 2 BF16 weights + 2 BF16 grads + 4 FP32 master + 4 Adam m + 4 Adam v).
+                (rule of thumb: 16 bytes/param: 2 BF16 weights + 2 BF16 grads + 4 FP32 master + 4 Adam m + 4 Adam v).
                 Activation memory dominates at large batch × sequence sizes.
               </p>
+              <ActivationNote />
             </div>
           </>
         )}

@@ -87,7 +87,12 @@ export const HARDWARE: Hardware[] = [
   { id: '910b', name: 'Ascend 910B 64GB', memGB: 64, tflops: 320, hbmTBs: 1.6, intraGBs: 196, interGBs: 25, approx: true },
 ]
 
-export const USABLE_FRACTION = 0.9      // leave room for fragmentation, comm buffers, runtime
+// Advertised capacities ("80GB") are GiB, which is what nvidia-smi and torch report, so an
+// 80GB H100 really addresses about 85.9 GB in the decimal units used everywhere else here.
+export const BYTES_PER_GIB = 1024 ** 3
+// Same idea as vLLM's --gpu-memory-utilization default: the rest goes to fragmentation,
+// communication buffers and the runtime.
+export const USABLE_FRACTION = 0.9
 
 // ─── Validity checks ─────────────────────────────────────────────────────────
 
@@ -216,7 +221,7 @@ export function computeTrain(
     mem = firstBusier ? first : last
     busiestStage = firstBusier ? `first stage (holds ${Math.min(p.pp, microBatches)} micro-batches)` : 'last stage (LM head + logits)'
   }
-  const usable = hw.memGB * 1e9 * USABLE_FRACTION
+  const usable = hw.memGB * BYTES_PER_GIB * USABLE_FRACTION
 
   // FLOPs: 6 × params per token, plus causal attention (average context seq/2).
   const tokensPerStep = s.globalBatch * s.seqLen
@@ -350,7 +355,7 @@ export function computeInfer(
 
   const kvPerTokenDev = layersHere * 2 * kvPerDev * m.headDim * kvb
   const reserve = 2e9 + s.batch * m.vocab * 4                     // runtime, graphs, FP32 logits
-  const usable = hw.memGB * 1e9 * USABLE_FRACTION
+  const usable = hw.memGB * BYTES_PER_GIB * USABLE_FRACTION
   const seqTokens = s.prompt + s.output
   const kvBudget = usable - weights - reserve
   const maxSeqs = Math.max(0, Math.floor(kvBudget / (kvPerTokenDev * seqTokens)))

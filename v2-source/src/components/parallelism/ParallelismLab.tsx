@@ -103,7 +103,8 @@ function MemRows({ rows, total, usable, capacityGB }: {
           <div className="h-full rounded transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: over ? '#ef4444' : 'var(--accent)' }} />
         </div>
         <p className="font-mono text-xs" style={{ color: over ? '#ef4444' : 'var(--text-muted)' }}>
-          {over ? '✗ Does not fit. ' : ''}Usable = {Math.round(USABLE_FRACTION * 100)}% of {capacityGB} GB, the rest goes to
+          {over ? '✗ Does not fit. ' : ''}Usable = {Math.round(USABLE_FRACTION * 100)}% of the {capacityGB} GB (GiB) the
+          device really addresses, the same budget as vLLM's --gpu-memory-utilization default. The rest goes to
           fragmentation, communication buffers and the runtime.
         </p>
       </div>
@@ -300,7 +301,7 @@ function TrainView({ model, hw, nodeSize, unit, s, setS, par, setPar }: {
           <div className="grid grid-cols-2 gap-3">
             <NumInput label="Global batch (sequences/step)" value={s.globalBatch} min={1} max={16384}
               onChange={v => set('globalBatch', Math.round(v))} />
-            <NumInput label="MFU (%)" value={Math.round(s.mfu * 100)} min={5} max={80}
+            <NumInput label="MFU (%)" value={Math.round(s.mfu * 100)} min={1} max={100}
               onChange={v => set('mfu', v / 100)} />
           </div>
           <Seg label="Micro-batch (sequences per forward)" options={[1, 2, 4, 8] as const} value={s.microBatch as 1}
@@ -310,8 +311,11 @@ function TrainView({ model, hw, nodeSize, unit, s, setS, par, setPar }: {
             <Seg label="Activation recompute" options={['none', 'full'] as const} value={s.recompute}
               onChange={v => set('recompute', v)} />
           </div>
-          <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-            {(s.globalBatch * s.seqLen).toLocaleString()} tokens per optimizer step.
+          <p className="font-mono text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            {(s.globalBatch * s.seqLen).toLocaleString()} tokens per optimizer step. MFU here is
+            model FLOPs ÷ (devices × peak BF16 FLOPs): published dense runs report roughly 35 to 50%,
+            MoE lower. Hardware FLOPs utilization counts recomputed forwards too, and the busy-time
+            percentage from nvidia-smi or npu-smi is a different measure again.
           </p>
         </Card>
 

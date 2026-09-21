@@ -4,7 +4,8 @@ import SectionHeading from './SectionHeading'
 
 const skills = [
   'Python', 'PyTorch', 'Transformers', 'vLLM',
-  'LLaMA-Factory', 'Megatron-LM', 'Ray',
+  'LLaMA-Factory', 'Megatron-LM', 'verl', 'Ray',
+  'LangChain', 'LangGraph', 'Claude Code', 'Codex',
   'Docker', 'Kubernetes', 'Apache Kafka',
   'AWS EC2', 'Java', 'Spring Framework', 'MongoDB', 'Postgres'
 ]
