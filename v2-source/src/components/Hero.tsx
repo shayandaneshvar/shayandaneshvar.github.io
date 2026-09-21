@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 
 const roles = [
   'Researcher',
-  'LLM Engineer',
-  'Software Developer',
+  'LLM Research Engineer',
+  'Machine Learning Engineer',
+  'Software Engineer',
   'Perpetually Curious',
 ]
 
@@ -59,6 +60,7 @@ export default function Hero() {
       </motion.h1>
 
       <motion.div {...fadeUp(0.3)} className="mt-2 h-14 md:h-16 overflow-hidden">
+        {/* Font size scales with the viewport so the longest role stays on one line down to ~320px */}
         <AnimatePresence mode="wait">
           <motion.h2
             key={roleIndex}
@@ -66,8 +68,8 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            style={{ color: 'var(--text)' }}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+            style={{ color: 'var(--text)', fontSize: 'clamp(1.125rem, 6vw, 3rem)' }}
+            className="font-bold leading-tight whitespace-nowrap"
           >
             {roles[roleIndex]}
           </motion.h2>
@@ -98,7 +100,7 @@ export default function Hero() {
         </button>
       </motion.div>
 
-      {/* Inline social + email row — fallback for screens too narrow for the fixed sidebars */}
+      {/* Inline social + email row: fallback for screens too narrow for the fixed sidebars */}
       <motion.div
         {...fadeUp(0.6)}
         className="flex min-[1100px]:hidden items-center gap-6 mt-12"
