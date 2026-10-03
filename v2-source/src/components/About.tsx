@@ -39,7 +39,7 @@ export default function About() {
               I train language models for a living and find it genuinely interesting. Most of my
               time right now goes into post-training Code LLMs at{' '}
               <span style={{ color: 'var(--text-bright)' }}>Huawei</span>: training, evaluation, and
-              deployment. Rejection sampling, SFT, reward design, benchmarking — the full loop,
+              deployment. Rejection sampling, SFT, reward design, benchmarking, the full loop,
               trying to make models that can actually help with real software tasks. Before that I
               was at MacDon adapting computer vision models to industrial settings with almost no
               labeled data.

@@ -217,7 +217,7 @@ pe = sinusoidal_pe(seq_len=6, d_model=4096)  # (6, 4096)
 H  = H0 + pe                                  # (6, 4096)`} />
           <div>
             <p className="font-mono text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-              PE matrix for your input — rows=positions, cols=dimensions (blue=positive, red=negative).
+              PE matrix for your input: rows=positions, cols=dimensions (blue=positive, red=negative).
               Each row is unique so every position gets a distinct signal:
             </p>
             <div className="overflow-x-auto">
@@ -752,13 +752,13 @@ function FFNPanel({ layerIdx, tokens }: { layerIdx: number; tokens: string[] }) 
           <CodeBlock code={`def ffn_swiglu(x, W_up, W_gate, W_down):
     return (x @ W_up * F.silu(x @ W_gate)) @ W_down
     #               ↑ element-wise, not dot product
-    # SiLU(x) = x * sigmoid(x)  — smooth, self-gating, cheap to compute`} />
+    # SiLU(x) = x * sigmoid(x): smooth, self-gating, cheap to compute`} />
         </>
       )}
 
       <div hidden={variant === 'moe'}>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-          Activation functions — GELU (blue) vs SiLU (purple):
+          Activation functions: GELU (blue) vs SiLU (purple):
         </p>
         <svg width={svgW} height={svgH} style={{ display: 'block' }}>
           <line x1={pt(xMin,0).sx} y1={pt(0,0).sy} x2={pt(xMax,0).sx} y2={pt(0,0).sy}
@@ -777,7 +777,7 @@ function FFNPanel({ layerIdx, tokens }: { layerIdx: number; tokens: string[] }) 
         <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
           Both are smooth everywhere with a slight negative region near 0.
           SiLU dips deeper negative; GELU tapers closer to 0 at large negative x.
-          In practice their performance is nearly identical — the SwiGLU gain comes
+          In practice their performance is nearly identical; the SwiGLU gain comes
           from the gating architecture, not SiLU vs GELU specifically.
         </p>
       </div>
@@ -823,11 +823,11 @@ function LMHeadPanel() {
         </Info>
         <Info>
           At training you already have the full sequence from the dataset. The model's
-          output is not a single token — it is (B, T, vocab_size): one logit vector per
+          output is not a single token, it is (B, T, vocab_size): one logit vector per
           position. Position t's logit vector was computed using only x₀...xₜ as context
           (the causal mask zeroed out everything after t), so it is a valid prediction
           for xₜ₊₁. All T predictions come out of one forward pass in parallel. The
-          future tokens are not used as input anywhere — they only appear in the targets
+          future tokens are not used as input anywhere; they only appear in the targets
           tensor to compute the loss against.
         </Info>
         <CodeBlock code={`# raw sequence: ["The", "cat", "sat", "on", "the", "mat"]
@@ -851,7 +851,7 @@ targets = tokens[:, 1:]    # (B, T)  [3797, 3332,  319, 262, 2603]
           sum over all T positions AND all B sequences, then divide.
           one backward pass applies gradients to the whole model at once.
         </Formula>
-        <CodeBlock code={`logits = model(inputs)   # (B, T, vocab_size) — one forward pass
+        <CodeBlock code={`logits = model(inputs)   # (B, T, vocab_size), one forward pass
 
 # flatten batch and time into one dimension,
 # then compute cross-entropy at every position simultaneously
@@ -888,7 +888,7 @@ function EmbeddingPanel({ tokens }: { tokens: string[] }) {
         randomly initialized. During training, when the model predicts the wrong next token,
         the loss backpropagates through every layer and into the embedding rows for whatever
         tokens appeared in that batch. Over billions of updates, rows for related tokens drift
-        close together in the vector space — not because anything manually assigns meaning,
+        close together in the vector space, not because anything manually assigns meaning,
         but as a side effect of getting good at predicting text.
       </Info>
       <Formula>
@@ -942,7 +942,7 @@ H0 = embedding(ids)   # just grabs rows, no multiply
         <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
           With sinusoidal or learned absolute positions, the position vector is added
           element-wise on top: H = H₀ + PE. With RoPE nothing is added here; position is
-          applied later by rotating Q and K inside each attention layer. In many models (weight tying), E is reused transposed as the LM head — same
+          applied later by rotating Q and K inside each attention layer. In many models (weight tying), E is reused transposed as the LM head: same
           matrix, two roles.
         </p>
       </div>
