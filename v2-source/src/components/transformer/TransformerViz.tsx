@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../../context/ThemeContext'
 import {
-  D_MODEL, N_HEADS, N_KV_GQA,
+  D_MODEL, N_HEADS, N_KV_GQA, DEMO_EXPERTS, DEMO_TOPK, routeToken,
   sinusoidalPE, ropeFreqs, attnWeights,
   makeColors, getSamples,
   type ColorFns, type SampleEntry,
@@ -523,8 +524,123 @@ out    = out.transpose(1, 2).reshape(B, T, d_model) @ W_o`} />
 
 // ─── FFN Panel ───────────────────────────────────────────────────────────────
 
-function FFNPanel({ layerIdx }: { layerIdx: number }) {
-  const [variant, setVariant] = useState<'gelu' | 'swiglu'>('gelu')
+// ─── MoE body (inside the FFN panel) ─────────────────────────────────────────
+
+function MoEBody({ tokens }: { tokens: string[] }) {
+  const routings = useMemo(() => tokens.map((_, i) => routeToken(i)), [tokens])
+  const expertsPerLayer = 128, topK = 8, expertInter = 1536, hidden = 4096, layers = 94
+  const perLayerTotal = expertsPerLayer * 3 * hidden * expertInter
+  const perLayerActive = topK * 3 * hidden * expertInter
+
+  return (
+    <>
+      <div className="font-mono text-xs px-3 py-2 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+        Pipeline: H (after attention) → <span style={{ color: 'var(--accent)' }}>router → top-{DEMO_TOPK} experts → weighted sum</span> → Add &amp; Norm
+      </div>
+      <Info>
+        A Mixture of Experts layer replaces the single FFN with many of them. A small router
+        scores every token against every expert, keeps the top-k scores, runs the token through
+        only those experts, and blends their outputs using the (renormalized) router weights.
+        Routing is per token, not per sequence, so two words in the same sentence usually take
+        different paths.
+      </Info>
+      <Info>
+        The point is decoupling capacity from cost. Total parameters grow with the number of
+        experts, but the FLOPs a token pays grow only with k. Qwen3 235B-A22B holds 235B
+        parameters and runs 22B of them per token.
+      </Info>
+      <Formula>
+        scores = x @ W_router        W_router ∈ ℝ^(d_model × E)<br />
+        g      = softmax(scores)     one probability per expert<br />
+        top-k  = indices of the k largest g, weights renormalized to sum to 1<br />
+        <br />
+        y = Σ&nbsp;over chosen i of  g_i · SwiGLU_i(x)<br />
+        <br />
+        params = E × 3 × d_model × I_expert   &nbsp;&nbsp;active = k × 3 × d_model × I_expert
+      </Formula>
+
+      <div>
+        <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+          Router output per token ({DEMO_EXPERTS} experts, top-{DEMO_TOPK} highlighted). Rows are your
+          input tokens, columns are experts:
+        </p>
+        <div className="space-y-1.5">
+          {tokens.map((t, i) => {
+            const { probs, chosen, weights } = routings[i]
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="font-mono text-xs w-14 shrink-0 text-right" style={{ color: 'var(--text)' }}>{t.slice(0, 6)}</span>
+                <div className="flex gap-1 flex-1">
+                  {probs.map((p, e) => {
+                    const pick = chosen.indexOf(e)
+                    return (
+                      <div key={e} className="flex-1 rounded text-center font-mono py-1"
+                        style={{
+                          fontSize: 9,
+                          border: `1px solid ${pick >= 0 ? 'var(--accent)' : 'var(--border)'}`,
+                          backgroundColor: pick >= 0 ? 'var(--accent-20)' : 'var(--surface-2)',
+                          color: pick >= 0 ? 'var(--text-bright)' : 'var(--text-muted)',
+                        }}>
+                        {pick >= 0 ? `${(weights[pick] * 100).toFixed(0)}%` : (p * 100).toFixed(0)}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <p className="font-mono text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          Highlighted cells show the renormalized weight the token gives that expert; the rest show
+          the raw router probability, which costs nothing because those experts never run.
+        </p>
+      </div>
+
+      <CodeBlock code={`def moe_layer(x, W_router, experts, k):
+    # x: (tokens, d_model)
+    scores = x @ W_router                      # (tokens, n_experts)
+    g      = torch.softmax(scores, dim=-1)
+    w, idx = torch.topk(g, k, dim=-1)          # (tokens, k)
+    w      = w / w.sum(dim=-1, keepdim=True)   # renormalize the kept weights
+
+    y = torch.zeros_like(x)
+    for slot in range(k):                      # real kernels group tokens per expert
+        for e in range(len(experts)):
+            picked = idx[:, slot] == e
+            if picked.any():
+                y[picked] += w[picked, slot, None] * experts[e](x[picked])
+    return y`} />
+
+      <div className="space-y-2">
+        <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Qwen3 235B-A22B, per layer:</p>
+        {[
+          [`${expertsPerLayer} experts × 3 × ${hidden} × ${expertInter}`, `${(perLayerTotal / 1e9).toFixed(2)}B stored`],
+          [`top-${topK} of them actually run`, `${(perLayerActive / 1e6).toFixed(0)}M per token`],
+          [`× ${layers} layers`, `${(perLayerTotal * layers / 1e9).toFixed(0)}B of the 235B total`],
+        ].map(([l, r]) => (
+          <div key={l} className="flex justify-between gap-3 font-mono text-xs">
+            <span style={{ color: 'var(--text)' }}>{l}</span>
+            <span style={{ color: 'var(--accent)' }}>{r}</span>
+          </div>
+        ))}
+      </div>
+
+      <Info>
+        Two practical consequences. Routing can collapse onto a few popular experts, so training
+        adds a load-balancing loss (and often a per-expert capacity limit) to keep tokens spread
+        out. And since every expert must be resident while only a few run, MoE models are cheap in
+        FLOPs but expensive in memory, which is why they are usually served with expert
+        parallelism: see{' '}
+        <Link to="/blog/5d-parallelism" style={{ color: 'var(--accent)' }} className="hover:underline">
+          the 5D parallelism post
+        </Link>.
+      </Info>
+    </>
+  )
+}
+
+function FFNPanel({ layerIdx, tokens }: { layerIdx: number; tokens: string[] }) {
+  const [variant, setVariant] = useState<'gelu' | 'swiglu' | 'moe'>('gelu')
 
   const xs = Array.from({ length: 61 }, (_, i) => -3 + i * 0.1)
   const geluY = xs.map(x => x * 0.5 * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3))))
@@ -547,18 +663,18 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
   return (
     <PanelCard title={`Feed-Forward Network · Layer ${layerIdx}`}>
       <div className="flex flex-wrap gap-2">
-        {(['gelu', 'swiglu'] as const).map(v => (
+        {(['gelu', 'swiglu', 'moe'] as const).map(v => (
           <button key={v} onClick={() => setVariant(v)}
             className="font-mono text-xs px-3 py-1.5 rounded border transition-all duration-150"
             style={variant === v
               ? { color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
               : { color: 'var(--text)', borderColor: 'var(--border)' }}>
-            {v === 'gelu' ? 'GELU (GPT-2, BERT)' : 'SwiGLU (Llama, Qwen)'}
+            {v === 'gelu' ? 'GELU (GPT-2, BERT)' : v === 'swiglu' ? 'SwiGLU (Llama, Qwen)' : 'MoE (Qwen3 235B, Mixtral)'}
           </button>
         ))}
       </div>
 
-      {variant === 'gelu' ? (
+      {variant === 'moe' ? <MoEBody tokens={tokens} /> : variant === 'gelu' ? (
         <>
           <Info>
             Two linear layers with GELU in between. The intermediate dimension expands
@@ -640,7 +756,7 @@ function FFNPanel({ layerIdx }: { layerIdx: number }) {
         </>
       )}
 
-      <div>
+      <div hidden={variant === 'moe'}>
         <p className="font-mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
           Activation functions — GELU (blue) vs SiLU (purple):
         </p>
@@ -1131,7 +1247,7 @@ export default function TransformerViz() {
                   layerIdx={selected === 'layer1-attn' ? 1 : 2} />
               )}
               {(selected === 'layer1-ffn' || selected === 'layer2-ffn') && (
-                <FFNPanel layerIdx={selected === 'layer1-ffn' ? 1 : 2} />
+                <FFNPanel layerIdx={selected === 'layer1-ffn' ? 1 : 2} tokens={tokens} />
               )}
               {selected === 'lm-head' && <LMHeadPanel />}
               {selected === 'sampling' && (

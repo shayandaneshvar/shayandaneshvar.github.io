@@ -29,7 +29,7 @@ export const posts: Post[] = [
     slug: 'transformer-visualization',
     title: 'Transformer Architecture Explorer',
     description:
-      'Interactive decoder-only transformer visualizer. Switch between sinusoidal and RoPE positional encodings, compare multi-head vs grouped-query attention, explore different sampling strategies. Click any module to see its internals.',
+      'Interactive decoder-only transformer visualizer. Switch between sinusoidal and RoPE positional encodings, compare multi-head vs grouped-query attention, follow a Mixture of Experts router routing each token, and explore different sampling strategies. Click any module to see its internals.',
     tags: ['Transformers', 'LLMs', 'Interactive', 'Visualization'],
     date: 'Jun 2026',
     live: true,

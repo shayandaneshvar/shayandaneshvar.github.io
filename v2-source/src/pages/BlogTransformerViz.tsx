@@ -8,8 +8,9 @@ export default function BlogTransformerViz() {
       <p>
         An interactive causal decoder-only transformer you can poke at. Switch between
         sinusoidal and RoPE position encodings, compare multi-head vs grouped-query
-        attention, and see how temperature and different sampling strategies carve up
-        the output distribution. Click any module in the architecture diagram to expand it.
+        attention, watch a Mixture of Experts router send each token to a different pair of
+        experts, and see how temperature and different sampling strategies carve up the
+        output distribution. Click any module in the architecture diagram to expand it.
       </p>
     }>
       {/* Visualizer */}

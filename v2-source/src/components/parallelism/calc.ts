@@ -32,7 +32,7 @@ export const MODELS: ModelCfg[] = [
     intermediate: 0, vocab: 151936, tied: false, maxContext: 32768,
     moe: { experts: 128, topK: 8, expertInter: 768 } },
   { id: 'qwen3-235b-a22b', name: 'Qwen3 235B-A22B', layers: 94, hidden: 4096, heads: 64, kvHeads: 4, headDim: 128,
-    intermediate: 0, vocab: 151936, tied: false, maxContext: 32768,
+    intermediate: 0, vocab: 151936, tied: false, maxContext: 262144,   // Thinking-2507 refresh
     moe: { experts: 128, topK: 8, expertInter: 1536 } },
 ]
 

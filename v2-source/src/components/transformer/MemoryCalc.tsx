@@ -2,13 +2,16 @@ import { useState, useMemo } from 'react'
 
 interface Config {
   name: string
-  paramsB: number
+  paramsB: number         // total params: what has to be stored
   nLayers: number
   dModel: number
   nHeads: number
   nKvHeads: number
   seqLen: number
   dHeadOverride?: number  // set when head_dim != dModel/nHeads (e.g. Qwen3-32B)
+  // Mixture of Experts: only topK of the experts run per token, but every expert is
+  // stored, gets gradients and gets optimizer state.
+  moe?: { experts: number; topK: number; expertInter: number; activeParamsB: number }
 }
 
 const PRESETS: Config[] = [
@@ -21,7 +24,22 @@ const PRESETS: Config[] = [
   // (config max_position_embeddings=40960 is the RoPE table size, not the training context).
   { name: 'Qwen3 14B',    paramsB: 14.8,  nLayers: 40,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 32768 },
   { name: 'Qwen3 32B',    paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 64,  nKvHeads: 8,  seqLen: 32768, dHeadOverride: 128 },
+  // Qwen3 235B-A22B-Thinking-2507: every layer is sparse (decoder_sparse_step=1,
+  // mlp_only_layers=[]), no shared expert, 262K native context.
+  { name: 'Qwen3 235B-A22B (MoE)', paramsB: 235.1, nLayers: 94, dModel: 4096, nHeads: 64, nKvHeads: 4,
+    seqLen: 32768, dHeadOverride: 128,
+    moe: { experts: 128, topK: 8, expertInter: 1536, activeParamsB: 22.1 } },
 ]
+
+// Activation bytes per token per layer. 34 is the Korthikanti et al. figure for a dense
+// GPT-style layer (11 attention + 19 MLP + 4 layer norms). An MoE layer keeps the same
+// attention and norm tensors but replaces the dense MLP: the layer input, a copy of each
+// token for every expert it is routed to, and the SwiGLU tensors inside those experts.
+function actBytesPerTokenPerLayer(cfg: Config): number {
+  if (!cfg.moe) return 34
+  const { topK, expertInter } = cfg.moe
+  return 15 + 2 + 2 * topK + 8 * topK * expertInter / cfg.dModel
+}
 
 function fmt(bytes: number): string {
   if (bytes < 1e3) return `${bytes.toFixed(0)} B`
@@ -106,11 +124,11 @@ const ACT_TERMS: [string, string][] = [
   ['two layer norms, inputs saved', '4 sbh'],
 ]
 
-function ActivationNote() {
+function ActivationNote({ moe, actConst, dModel }: { moe?: Config['moe']; actConst: number; dModel: number }) {
   return (
     <details className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
       <summary className="cursor-pointer" style={{ color: 'var(--text)' }}>
-        Where the 34 bytes per token per layer comes from
+        Where the {actConst.toFixed(0)} bytes per token per layer comes from
       </summary>
       <div className="mt-2 space-y-2 leading-relaxed">
         <p>
@@ -145,6 +163,17 @@ function ActivationNote() {
           nearer 40. Gradient checkpointing replaces all of it with just the layer inputs, at the cost
           of a second forward pass.
         </p>
+        {moe && (
+          <p>
+            This preset is a Mixture of Experts, so the dense MLP's 19 is replaced. Attention and the
+            norms keep their 15, then each token costs 2 for the layer input, {2 * moe.topK} for the
+            copies dispatched to its top-{moe.topK} experts, and{' '}
+            {(8 * moe.topK * moe.expertInter / dModel).toFixed(0)} for the SwiGLU tensors inside those
+            experts (8 × {moe.topK} × {moe.expertInter} / d_model), giving{' '}
+            <span style={{ color: 'var(--accent)' }}>{actConst.toFixed(0)} sbh</span>. Routed experts
+            make activations bigger per token even though they make FLOPs smaller.
+          </p>
+        )}
       </div>
     </details>
   )
@@ -172,6 +201,7 @@ export default function MemoryCalc() {
   )
   const kvHeads = Math.min(cfg.nKvHeads, cfg.nHeads)
   const params = cfg.paramsB * 1e9
+  const actPerTokLayer = actBytesPerTokenPerLayer(cfg)
 
   // ── Inference ───────────────────────────────────────────────────────────────
   const inf_weights = params * 2
@@ -189,9 +219,9 @@ export default function MemoryCalc() {
   const tr_adam_m = params * 4
   const tr_adam_v = params * 4
   // Activation memory without gradient checkpointing.
-  // Formula: 34 × L × B × S × H bytes (Korthikanti et al. 2022, TP=1 approximation)
+  // Formula: bytes/token/layer × L × B × S × H (Korthikanti et al. 2022, TP=1 approximation).
   // Does not include the quadratic-in-seq attention term, so it is accurate for short-to-medium sequences.
-  const tr_act = cfg.nLayers * batchSize * cfg.seqLen * cfg.dModel * 34
+  const tr_act = cfg.nLayers * batchSize * cfg.seqLen * cfg.dModel * actPerTokLayer
   const tr_no_act = tr_fp16_weights + tr_fp16_grads + tr_fp32_master + tr_adam_m + tr_adam_v
   const tr_total = tr_no_act + tr_act
   const bytesPerParam = tr_no_act / params
@@ -223,9 +253,21 @@ export default function MemoryCalc() {
         <NumField label="Q heads" value={cfg.nHeads} onChange={v => set('nHeads', v)} min={1} max={256} />
         <NumField label="KV heads" value={kvHeads} onChange={v => set('nKvHeads', v)} min={1} max={cfg.nHeads} />
         <NumField label="d_head (derived)" value={dHead} min={dHead} max={dHead} readonly />
-        <NumField label="Context length" value={cfg.seqLen} onChange={v => set('seqLen', v)} min={1} max={200000} step={512} />
+        <NumField label="Context length" value={cfg.seqLen} onChange={v => set('seqLen', v)} min={1} max={262144} step={512} />
         <NumField label="Batch size (train)" value={batchSize} onChange={setBatchSize} min={1} max={512} />
       </div>
+
+      {cfg.moe && (
+        <div className="font-mono text-xs px-3 py-2 rounded leading-relaxed"
+          style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+          <span style={{ color: 'var(--accent)' }}>Mixture of Experts</span>: {cfg.moe.experts} experts per layer,
+          top-{cfg.moe.topK} routed per token, expert FFN {cfg.moe.expertInter}.
+          {' '}<span style={{ color: 'var(--text-bright)' }}>{cfg.paramsB}B total params</span> have to be stored,
+          but only <span style={{ color: 'var(--text-bright)' }}>{cfg.moe.activeParamsB}B</span> run per token
+          ({(cfg.paramsB / cfg.moe.activeParamsB).toFixed(1)}× fewer FLOPs than a dense model of the same size).
+          Memory follows the total, speed follows the active count, which is the whole point of the architecture.
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2">
@@ -248,8 +290,12 @@ export default function MemoryCalc() {
             <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
               BF16 weights loaded once. KV cache grows with each generated token up to context length.
               No gradients or optimizer states.
+              {cfg.moe && ' Every expert has to be resident even though each token only visits a few, so an MoE model is cheap to run and expensive to hold.'}
             </p>
-            <MemRow label="Weights (BF16)" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="Weights (BF16)"
+              note={cfg.moe
+                ? `${cfg.paramsB}B total params × 2 bytes (all ${cfg.moe.experts} experts resident; only ${cfg.moe.activeParamsB}B run per token)`
+                : `${cfg.paramsB}B params × 2 bytes`}
               bytes={inf_weights} total={inf_total} color={COLORS.weights} />
             <MemRow
               label="KV cache (BF16)"
@@ -273,11 +319,12 @@ export default function MemoryCalc() {
             <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
               Mixed precision: BF16 forward/backward (same range as FP32, no loss scaling needed),
               FP32 master weights and optimizer states (AdamW).
+              {cfg.moe && ' Every expert gets gradients and optimizer state, so the 16 bytes/param applies to the total, not the active, parameter count. '}
               Activations without gradient checkpointing; enabling it trades compute for memory.
             </p>
-            <MemRow label="BF16 weights" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="BF16 weights" note={`${cfg.paramsB}B ${cfg.moe ? 'total ' : ''}params × 2 bytes`}
               bytes={tr_fp16_weights} total={tr_total} color={COLORS.weights} />
-            <MemRow label="BF16 gradients" note={`${cfg.paramsB}B params × 2 bytes`}
+            <MemRow label="BF16 gradients" note={`${cfg.paramsB}B ${cfg.moe ? 'total ' : ''}params × 2 bytes`}
               bytes={tr_fp16_grads} total={tr_total} color={COLORS.grads} />
             <MemRow label="FP32 master weights" note={`${cfg.paramsB}B params × 4 bytes. BF16 has only 7 mantissa bits, so a tiny update (grad × lr ≈ 1e-7) added to a weight near 1.0 rounds straight back to that weight and is lost. The FP32 copy is the accumulator that keeps those fractions between steps`}
               bytes={tr_fp32_master} total={tr_total} color={COLORS.master} />
@@ -287,7 +334,7 @@ export default function MemoryCalc() {
               bytes={tr_adam_v} total={tr_total} color={COLORS.adamV} />
             <MemRow
               label="Activations"
-              note={`${cfg.nLayers}L × batch ${batchSize} × ${cfg.seqLen.toLocaleString()} seq × ${cfg.dModel} dim × 34 bytes (approx, no checkpointing)`}
+              note={`${cfg.nLayers}L × batch ${batchSize} × ${cfg.seqLen.toLocaleString()} seq × ${cfg.dModel} dim × ${actPerTokLayer.toFixed(0)} bytes (approx, no checkpointing)${cfg.moe ? `, higher than a dense layer's 34 because each token is copied into ${cfg.moe.topK} experts` : ''}`}
               bytes={tr_act} total={tr_total} color={COLORS.act} />
             <div className="pt-3 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
               <div className="flex justify-between items-baseline">
@@ -307,7 +354,7 @@ export default function MemoryCalc() {
                 (rule of thumb: 16 bytes/param: 2 BF16 weights + 2 BF16 grads + 4 FP32 master + 4 Adam m + 4 Adam v).
                 Activation memory dominates at large batch × sequence sizes.
               </p>
-              <ActivationNote />
+              <ActivationNote moe={cfg.moe} actConst={actPerTokLayer} dModel={cfg.dModel} />
             </div>
           </>
         )}

@@ -90,3 +90,29 @@ export function getSamples(temperature = 1.0): SampleEntry[] {
     return { token, prob: probs[i], cumProb: cum }
   })
 }
+
+// ─── MoE routing (demo) ──────────────────────────────────────────────────────
+// Deterministic per-token router scores, so the diagram shows a plausible routing
+// pattern without running a real forward pass.
+
+export const DEMO_EXPERTS = 8
+export const DEMO_TOPK = 2
+
+export interface Routing {
+  probs: number[]              // router softmax over all experts
+  chosen: number[]             // expert indices, highest score first
+  weights: number[]            // renormalized weights of the chosen experts
+}
+
+export function routeToken(tokenIdx: number, nExperts = DEMO_EXPERTS, topK = DEMO_TOPK): Routing {
+  const r = lcg(tokenIdx * 7919 + 13)
+  const logits = Array.from({ length: nExperts }, () => (r() - 0.5) * 6)
+  const probs = softmax(logits)
+  const chosen = probs
+    .map((p, i) => [p, i] as const)
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, topK)
+    .map(([, i]) => i)
+  const mass = chosen.reduce((s, i) => s + probs[i], 0)
+  return { probs, chosen, weights: chosen.map(i => probs[i] / mass) }
+}
