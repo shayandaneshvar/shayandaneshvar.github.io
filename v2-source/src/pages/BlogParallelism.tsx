@@ -235,9 +235,11 @@ export default function BlogParallelism() {
               precision AdamW is 2 + 2 + 12 bytes (BF16 weights and gradients, FP32 master copy, FP32
               Adam moments); pure BF16 with stochastic rounding drops the master copy and uses BF16
               moments; 8-bit Adam quantizes the moments to one byte each; LoRA freezes the base in
-              BF16 and pays gradients and optimizer state only on the trainable share, and its
-              backward pass skips most weight-gradient matmuls, so it is counted at 4 FLOPs per
-              parameter per token rather than 6. Activations assume FlashAttention (no stored score matrix),
+              BF16 and pays gradients and optimizer state only on the adapters, whose size follows from
+              the rank and the target modules: an adapter on a d_in × d_out matrix is r × (d_in + d_out)
+              parameters, so rank 16 on q, k, v and o comes to roughly 0.1% of a dense model. Its backward
+              pass skips most weight-gradient matmuls, so it is counted at 4 FLOPs per parameter per token
+              rather than 6. Activations assume FlashAttention (no stored score matrix),
               SwiGLU, no dropout, and sequence parallelism alongside TP. Step time is 6 × active parameters ×
               tokens plus causal attention FLOPs, divided by devices × peak × MFU, then stretched by the
               pipeline bubble. Communication is folded into the MFU figure rather than simulated, so be

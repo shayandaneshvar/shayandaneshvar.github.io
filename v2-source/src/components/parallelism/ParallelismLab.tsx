@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   MODELS, HARDWARE, USABLE_FRACTION, modelStats,
   computeTrain, searchTrain, computeInfer, searchInfer,
-  fmtBytes, fmtParams, fmtTime, fmtRate, recipeBytes, RECIPE_LABEL,
+  fmtBytes, fmtParams, fmtTime, fmtRate, recipeBytes, RECIPE_LABEL, loraTrainable, trainableFraction,
   type ModelCfg, type Hardware, type Check,
   type TrainSettings, type TrainPar, type TrainResult,
   type InferSettings, type InferPar, type InferResult,
@@ -188,7 +188,7 @@ function bestInfer(m: ModelCfg, hw: Hardware, node: number, s: InferSettings): I
 }
 
 const DEFAULT_TRAIN: TrainSettings = { seqLen: 4096, globalBatch: 256, microBatch: 1, zero: 1, recompute: 'none', mfu: 0.4,
-  recipe: 'amp-adamw', loraPct: 1 }
+  recipe: 'amp-adamw', loraRank: 16, loraTargets: 'attn' }
 const DEFAULT_INFER: InferSettings = { prompt: 8192, output: 1024, batch: 32, wDtype: 'bf16', kvDtype: 'bf16' }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -315,20 +315,30 @@ function TrainView({ model, hw, nodeSize, unit, s, setS, par, setPar }: {
           <Seg label="Training recipe" options={['amp-adamw', 'bf16-sr', 'adam8bit', 'lora'] as const}
             value={s.recipe} format={r => RECIPE_LABEL[r]} onChange={v => set('recipe', v)} />
           {s.recipe === 'lora' && (
-            <NumInput label="Trainable parameters (% of the model)" value={s.loraPct} min={0.01} max={100} step={0.1}
-              onChange={v => set('loraPct', v)} />
+            <div className="grid grid-cols-2 gap-3">
+              <Seg label="LoRA rank (r)" options={[8, 16, 32, 64, 128] as const} value={s.loraRank as 16}
+                onChange={v => set('loraRank', v)} />
+              <Seg label="Adapters on" options={['attn', 'all'] as const} value={s.loraTargets}
+                format={t => (t === 'attn' ? 'q, k, v, o' : 'every linear')}
+                onChange={v => set('loraTargets', v)} />
+            </div>
           )}
           <p className="font-mono text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             {(() => {
-              const rb = recipeBytes(s.recipe, s.loraPct)
+              const rb = recipeBytes(s.recipe, trainableFraction(model, s))
               const total = rb.weight + rb.grad + rb.opt
-              return `${total.toFixed(total < 10 ? 2 : 1)} bytes per parameter before ZeRO sharding: ${rb.weight} resident weights`
+              return `${total.toFixed(total < 10 ? 2 : 1)} bytes per parameter before ZeRO sharding: ${rb.weight.toFixed(2)} resident weights`
                 + ` + ${rb.grad.toFixed(2)} gradients + ${rb.opt.toFixed(2)} optimizer state.`
             })()}
             {s.recipe === 'amp-adamw' && ' BF16 weights and gradients, FP32 master copy, Adam m and v in FP32.'}
             {s.recipe === 'bf16-sr' && ' No FP32 master copy: stochastic rounding keeps small updates alive, saving 8 bytes per parameter at some convergence risk.'}
             {s.recipe === 'adam8bit' && ' Adam moments quantized to one byte each (bitsandbytes), FP32 master kept.'}
-            {s.recipe === 'lora' && ' Base weights frozen in BF16 with no gradients or optimizer state; only the adapters are trained, and the backward pass skips most weight-gradient matmuls.'}
+            {s.recipe === 'lora' && (() => {
+              const t = loraTrainable(model, s.loraRank, s.loraTargets)
+              return ` Rank ${s.loraRank} on ${s.loraTargets === 'attn' ? 'q, k, v and o' : 'every linear layer'}`
+                + ` adds ${fmtParams(t)} trainable parameters, ${(t / modelStats(model).total * 100).toFixed(2)}% of the model.`
+                + ' Each adapter is r × (d_in + d_out) parameters. The base stays frozen in BF16, and the backward pass skips most weight-gradient matmuls.'
+            })()}
           </p>
           <p className="font-mono text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             {(s.globalBatch * s.seqLen).toLocaleString()} tokens per optimizer step. MFU here is
@@ -377,8 +387,8 @@ function TrainView({ model, hw, nodeSize, unit, s, setS, par, setPar }: {
         <Card title={`Memory on the busiest device (${r.busiestStage})`}>
           <MemRows usable={r.usable} total={r.mem.total} capacityGB={hw.memGB} rows={[
             { label: 'Weights', note: `BF16, ${layersHere} layers, ${s.zero >= 3 ? zeroNote(3) : `1/${par.tp} of each matrix (TP)`}`, bytes: r.mem.weights },
-            { label: 'Gradients', note: `${recipeBytes(s.recipe, s.loraPct).grad.toFixed(2)} B/param, ${zeroNote(2)}`, bytes: r.mem.grads },
-            { label: 'Optimizer', note: `${RECIPE_LABEL[s.recipe]}, ${recipeBytes(s.recipe, s.loraPct).opt.toFixed(2)} B/param, ${zeroNote(1)}`, bytes: r.mem.optimizer },
+            { label: 'Gradients', note: `${recipeBytes(s.recipe, trainableFraction(model, s)).grad.toFixed(2)} B/param, ${zeroNote(2)}`, bytes: r.mem.grads },
+            { label: 'Optimizer', note: `${RECIPE_LABEL[s.recipe]}, ${recipeBytes(s.recipe, trainableFraction(model, s)).opt.toFixed(2)} B/param, ${zeroNote(1)}`, bytes: r.mem.optimizer },
             { label: 'Activations', note: s.recompute === 'full' ? 'layer inputs only, recomputed in backward' : `saved for backward, ÷${par.tp * par.cp} by TP×CP`, bytes: r.mem.activations },
             { label: 'Logits', note: 'BF16 logits + FP32 loss, last stage only', bytes: r.mem.logits },
           ]} />

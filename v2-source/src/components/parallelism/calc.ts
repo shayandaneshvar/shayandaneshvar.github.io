@@ -131,13 +131,39 @@ export const RECIPE_LABEL: Record<Recipe, string> = {
   'lora': 'LoRA',
 }
 
-export function recipeBytes(recipe: Recipe, loraPct: number): RecipeBytes {
-  const p = Math.max(0, loraPct) / 100
-  // weight: resident BF16 copy. grad / opt: per trainable parameter.
+export type LoraTargets = 'attn' | 'all'
+
+// A LoRA adapter on a d_in × d_out matrix adds A (d_in × r) and B (r × d_out),
+// so r × (d_in + d_out) trainable parameters. Rank and target modules decide the
+// count; the percentage of the model is what falls out.
+export function loraTrainable(m: ModelCfg, rank: number, targets: LoraTargets): number {
+  const qDim = m.heads * m.headDim
+  const kvDim = m.kvHeads * m.headDim
+  const attn = rank * ((m.hidden + qDim)        // q_proj
+    + 2 * (m.hidden + kvDim)                    // k_proj, v_proj
+    + (qDim + m.hidden))                        // o_proj
+  let mlp = 0
+  if (targets === 'all') {
+    mlp = m.moe
+      ? m.moe.experts * 3 * rank * (m.hidden + m.moe.expertInter)   // every expert gets adapters
+      : 3 * rank * (m.hidden + m.intermediate)                      // gate, up, down
+  }
+  return m.layers * (attn + mlp)
+}
+
+export function recipeBytes(recipe: Recipe, trainableFrac: number): RecipeBytes {
+  const f = Math.max(0, Math.min(1, trainableFrac))
+  // weight: resident BF16 copy (plus the adapters). grad / opt: trainable parameters only.
   if (recipe === 'bf16-sr') return { weight: 2, grad: 2, opt: 4 }    // BF16 m + v, no FP32 master
   if (recipe === 'adam8bit') return { weight: 2, grad: 2, opt: 6 }   // FP32 master + 1-byte m, v
-  if (recipe === 'lora') return { weight: 2, grad: 2 * p, opt: 12 * p }  // base frozen
+  if (recipe === 'lora') return { weight: 2 * (1 + f), grad: 2 * f, opt: 12 * f }  // base frozen
   return { weight: 2, grad: 2, opt: 12 }                            // 16 B/param all in
+}
+
+// Fraction of the model the optimizer actually trains under the chosen recipe.
+export function trainableFraction(m: ModelCfg, s: TrainSettings): number {
+  if (s.recipe !== 'lora') return 1
+  return loraTrainable(m, s.loraRank, s.loraTargets) / modelStats(m).total
 }
 
 export interface TrainSettings {
@@ -148,7 +174,8 @@ export interface TrainSettings {
   recompute: 'none' | 'full'
   mfu: number                           // 0..1
   recipe: Recipe
-  loraPct: number                       // trainable share when recipe is lora
+  loraRank: number                      // LoRA rank r
+  loraTargets: LoraTargets              // which matrices get adapters
 }
 
 export interface TrainPar { tp: number; pp: number; cp: number; ep: number; dp: number }
@@ -199,7 +226,7 @@ function trainStageMemory(
   const params = (sharded: boolean) =>
     sharded ? denseParams / dpGroup + expertParams / edpGroup : denseParams + expertParams
 
-  const rb = recipeBytes(s.recipe, s.loraPct)
+  const rb = recipeBytes(s.recipe, trainableFraction(m, s))
   const weights = rb.weight * params(s.zero >= 3)
   const grads = rb.grad * params(s.zero >= 2)
   const optimizer = rb.opt * params(s.zero >= 1)
@@ -283,8 +310,11 @@ export function computeTrain(
   checks.push(check(mem.total <= usable,
     `busiest device needs ${fmtBytes(mem.total)} of ${fmtBytes(usable)} usable (${Math.round(USABLE_FRACTION * 100)}% of ${hw.memGB} GB)`))
   if (s.recipe === 'lora') {
-    checks.push(check(s.loraPct > 0 && s.loraPct <= 100,
-      `${s.loraPct}% of parameters trainable: base weights stay frozen in BF16 with no optimizer state`, false))
+    const trainable = loraTrainable(m, s.loraRank, s.loraTargets)
+    checks.push(check(s.loraRank > 0,
+      `rank ${s.loraRank} on ${s.loraTargets === 'attn' ? 'q, k, v, o' : 'every linear layer'} = `
+      + `${fmtParams(trainable)} trainable (${(trainable / st.total * 100).toFixed(2)}% of the model); `
+      + 'the base stays frozen in BF16 with no optimizer state', false))
   }
   checks.push(check(s.seqLen <= m.maxContext,
     `sequence ${s.seqLen} ≤ native context ${m.maxContext}`, false))
