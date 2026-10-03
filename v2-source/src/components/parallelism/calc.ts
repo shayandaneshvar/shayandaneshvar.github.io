@@ -29,7 +29,7 @@ export const MODELS: ModelCfg[] = [
   { id: 'llama31-70b', name: 'Llama 3.1 70B', layers: 80, hidden: 8192, heads: 64, kvHeads: 8, headDim: 128,
     intermediate: 28672, vocab: 128256, tied: false, maxContext: 131072 },
   { id: 'qwen3-30b-a3b', name: 'Qwen3 30B-A3B', layers: 48, hidden: 2048, heads: 32, kvHeads: 4, headDim: 128,
-    intermediate: 0, vocab: 151936, tied: false, maxContext: 32768,
+    intermediate: 0, vocab: 151936, tied: false, maxContext: 262144,   // Thinking-2507 refresh
     moe: { experts: 128, topK: 8, expertInter: 768 } },
   { id: 'qwen3-235b-a22b', name: 'Qwen3 235B-A22B', layers: 94, hidden: 4096, heads: 64, kvHeads: 4, headDim: 128,
     intermediate: 0, vocab: 151936, tied: false, maxContext: 262144,   // Thinking-2507 refresh

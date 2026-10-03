@@ -24,8 +24,11 @@ const PRESETS: Config[] = [
   // (config max_position_embeddings=40960 is the RoPE table size, not the training context).
   { name: 'Qwen3 14B',    paramsB: 14.8,  nLayers: 40,  dModel: 5120,  nHeads: 40,  nKvHeads: 8,  seqLen: 32768 },
   { name: 'Qwen3 32B',    paramsB: 32.8,  nLayers: 64,  dModel: 5120,  nHeads: 64,  nKvHeads: 8,  seqLen: 32768, dHeadOverride: 128 },
-  // Qwen3 235B-A22B-Thinking-2507: every layer is sparse (decoder_sparse_step=1,
+  // Qwen3 MoE (Thinking-2507): every layer is sparse (decoder_sparse_step=1,
   // mlp_only_layers=[]), no shared expert, 262K native context.
+  { name: 'Qwen3 30B-A3B (MoE)', paramsB: 30.5, nLayers: 48, dModel: 2048, nHeads: 32, nKvHeads: 4,
+    seqLen: 32768, dHeadOverride: 128,
+    moe: { experts: 128, topK: 8, expertInter: 768, activeParamsB: 3.4 } },
   { name: 'Qwen3 235B-A22B (MoE)', paramsB: 235.1, nLayers: 94, dModel: 4096, nHeads: 64, nKvHeads: 4,
     seqLen: 32768, dHeadOverride: 128,
     moe: { experts: 128, topK: 8, expertInter: 1536, activeParamsB: 22.1 } },
