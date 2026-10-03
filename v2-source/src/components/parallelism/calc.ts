@@ -118,6 +118,28 @@ function headChecks(m: ModelCfg, tp: number, nodeSize: number): Check[] {
 
 // ─── Training ────────────────────────────────────────────────────────────────
 
+// What the optimizer keeps per parameter. The default is the usual BF16 mixed precision
+// with an FP32 master copy, but it is not the only recipe people run.
+export type Recipe = 'amp-adamw' | 'bf16-sr' | 'adam8bit' | 'lora'
+
+export interface RecipeBytes { weight: number; grad: number; opt: number }
+
+export const RECIPE_LABEL: Record<Recipe, string> = {
+  'amp-adamw': 'Mixed precision AdamW',
+  'bf16-sr': 'Pure BF16 + stochastic rounding',
+  'adam8bit': '8-bit Adam',
+  'lora': 'LoRA',
+}
+
+export function recipeBytes(recipe: Recipe, loraPct: number): RecipeBytes {
+  const p = Math.max(0, loraPct) / 100
+  // weight: resident BF16 copy. grad / opt: per trainable parameter.
+  if (recipe === 'bf16-sr') return { weight: 2, grad: 2, opt: 4 }    // BF16 m + v, no FP32 master
+  if (recipe === 'adam8bit') return { weight: 2, grad: 2, opt: 6 }   // FP32 master + 1-byte m, v
+  if (recipe === 'lora') return { weight: 2, grad: 2 * p, opt: 12 * p }  // base frozen
+  return { weight: 2, grad: 2, opt: 12 }                            // 16 B/param all in
+}
+
 export interface TrainSettings {
   seqLen: number
   globalBatch: number                   // sequences per optimizer step
@@ -125,6 +147,8 @@ export interface TrainSettings {
   zero: 0 | 1 | 2 | 3
   recompute: 'none' | 'full'
   mfu: number                           // 0..1
+  recipe: Recipe
+  loraPct: number                       // trainable share when recipe is lora
 }
 
 export interface TrainPar { tp: number; pp: number; cp: number; ep: number; dp: number }
@@ -175,9 +199,10 @@ function trainStageMemory(
   const params = (sharded: boolean) =>
     sharded ? denseParams / dpGroup + expertParams / edpGroup : denseParams + expertParams
 
-  const weights = 2 * params(s.zero >= 3)                         // BF16
-  const grads = 2 * params(s.zero >= 2)                           // BF16
-  const optimizer = 12 * params(s.zero >= 1)                      // FP32 master + Adam m + v
+  const rb = recipeBytes(s.recipe, s.loraPct)
+  const weights = rb.weight * params(s.zero >= 3)
+  const grads = rb.grad * params(s.zero >= 2)
+  const optimizer = rb.opt * params(s.zero >= 1)
 
   // Activations saved for backward, bytes per token per layer (BF16, FlashAttention,
   // no dropout). Sequence parallel shards everything by TP, CP shards the sequence.
@@ -225,7 +250,10 @@ export function computeTrain(
 
   // FLOPs: 6 × params per token, plus causal attention (average context seq/2).
   const tokensPerStep = s.globalBatch * s.seqLen
-  let flopsPerToken = 6 * st.flopParams + 6 * m.layers * s.seqLen * st.qDim
+  // 6 = forward (2) + input grads (2) + weight grads (2). LoRA skips most weight-gradient
+  // matmuls because the base matrices are frozen, so it lands near 4.
+  const perParamFlops = s.recipe === 'lora' ? 4 : 6
+  let flopsPerToken = perParamFlops * st.flopParams + 6 * m.layers * s.seqLen * st.qDim
   if (s.recompute === 'full') flopsPerToken *= 4 / 3                // one extra forward
   const bubble = (p.pp - 1) / (microBatches + p.pp - 1)
   const computeTime = tokensPerStep * flopsPerToken / (devices * hw.tflops * 1e12 * s.mfu)
@@ -254,6 +282,10 @@ export function computeTrain(
     `global batch ${s.globalBatch} = DP ${p.dp} × micro-batch ${s.microBatch} × ${microBatches} accumulation steps`))
   checks.push(check(mem.total <= usable,
     `busiest device needs ${fmtBytes(mem.total)} of ${fmtBytes(usable)} usable (${Math.round(USABLE_FRACTION * 100)}% of ${hw.memGB} GB)`))
+  if (s.recipe === 'lora') {
+    checks.push(check(s.loraPct > 0 && s.loraPct <= 100,
+      `${s.loraPct}% of parameters trainable: base weights stay frozen in BF16 with no optimizer state`, false))
+  }
   checks.push(check(s.seqLen <= m.maxContext,
     `sequence ${s.seqLen} ≤ native context ${m.maxContext}`, false))
   if (devices > nodeSize) {

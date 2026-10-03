@@ -48,14 +48,60 @@ export default function BlogTransformerViz() {
             is 4x smaller than MHA with no meaningful quality loss. At 128K context windows
             the difference is tens of gigabytes.
           </p>
+          <p className="text-sm font-medium mt-2" style={{ color: 'var(--text-bright)' }}>What is actually quadratic</p>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
-            There is a separate scaling problem with context length: naive attention computes
-            a seq_len × seq_len score matrix, so memory grows quadratically. Doubling context
-            length quadruples the memory needed to store those scores. FlashAttention sidesteps
-            this by never materializing the full matrix. It computes attention in tiles that
-            fit in fast on-chip SRAM, keeping memory linear in sequence length. Compute is
-            still O(n²) in FLOPs either way, but the memory bottleneck is gone, which is what
-            makes 128K+ contexts feasible on real hardware.
+            "Attention is O(n²)" covers three different problems that have three different
+            answers, and it is worth keeping them apart:
+          </p>
+          <ul className="space-y-2 text-sm leading-relaxed list-disc pl-5" style={{ color: 'var(--text)' }}>
+            <li>
+              <span style={{ color: 'var(--text-bright)' }}>Recomputing K and V every step.</span>{' '}
+              Quadratic total work across a generation, and exactly what the KV cache removes.
+            </li>
+            <li>
+              <span style={{ color: 'var(--text-bright)' }}>Storing the score matrix.</span>{' '}
+              Naive attention materializes a seq_len × seq_len matrix per head, so doubling the
+              context quadruples that memory. FlashAttention never writes it out: it walks the
+              sequence in tiles that fit in on-chip SRAM, keeps a running softmax normalizer,
+              and recomputes the tile it needs during the backward pass. Memory becomes linear
+              in sequence length and the kernel gets faster, because the bottleneck was moving
+              bytes to and from HBM rather than the math itself.
+            </li>
+            <li>
+              <span style={{ color: 'var(--text-bright)' }}>The attention FLOPs.</span>{' '}
+              Still O(n²), and nothing above changes that. Every query still attends to every
+              earlier key. Getting below quadratic compute means changing the model: a sliding
+              window, sparse attention, or a linear-attention hybrid such as Mamba or Gated
+              DeltaNet, where most layers carry a fixed-size recurrent state and only a few keep
+              full attention.
+            </li>
+            <li>
+              <span style={{ color: 'var(--text-bright)' }}>The KV cache itself.</span>{' '}
+              Linear in context length, but a naive allocator wastes most of what it reserves.
+              That is what PagedAttention fixes.
+            </li>
+          </ul>
+          <p className="text-sm font-medium mt-2" style={{ color: 'var(--text-bright)' }}>PagedAttention</p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+            Early serving stacks gave each sequence one contiguous KV buffer, sized for the
+            longest output it might produce. A request that could generate 2K tokens but stopped
+            at 100 held the rest of that buffer anyway, and the leftover gaps between buffers
+            were too small to reuse. The vLLM paper measured 60% to 80% of KV memory lost this way.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+            PagedAttention borrows the idea behind virtual memory. The cache is cut into
+            fixed-size blocks of a few tokens each, a sequence's blocks can sit anywhere in
+            memory, and a per-sequence block table maps logical positions to physical blocks.
+            The attention kernel reads through that table instead of assuming one flat array.
+            Waste drops to a few percent, and the memory you get back turns directly into more
+            concurrent sequences, which is throughput. Blocks can also be shared: several samples
+            of the same prompt, or many requests behind one system prompt, can point at the same
+            physical blocks and copy on write only when they diverge.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+            The two are complementary and both are standard now. FlashAttention makes computing
+            attention over a long context possible; PagedAttention makes storing many of those
+            contexts at once affordable.
           </p>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
             One important limitation: in a multi-turn conversation, each new turn typically
