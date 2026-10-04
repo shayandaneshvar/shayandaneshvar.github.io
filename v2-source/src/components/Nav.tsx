@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
+import ResumeDialog from './ResumeDialog'
 
 const navLinks = [
   { label: 'About', section: 'about' },
@@ -36,6 +37,7 @@ function MoonIcon() {
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [resumeOpen, setResumeOpen] = useState(false)
   const { theme, toggle } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
@@ -113,15 +115,13 @@ export default function Nav() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * navLinks.length + 0.3 }}
             >
-              <a
-                href="/files/CV_ShayanDaneshvar_Apr2025.pdf"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => setResumeOpen(true)}
                 style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
                 className="font-mono text-sm border px-4 py-2 rounded hover:opacity-80 transition-opacity"
               >
                 Resume
-              </a>
+              </button>
             </motion.li>
           </ol>
 
@@ -170,15 +170,13 @@ export default function Nav() {
                 </li>
               ))}
               <li>
-                <a
-                  href="/files/CV_ShayanDaneshvar_Apr2025.pdf"
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => { setMenuOpen(false); setResumeOpen(true) }}
                   style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
                   className="font-mono border px-6 py-3 rounded hover:opacity-80 transition-opacity"
                 >
                   Resume
-                </a>
+                </button>
               </li>
             </ol>
           </motion.div>
@@ -195,6 +193,10 @@ export default function Nav() {
             onClick={() => setMenuOpen(false)}
           />
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {resumeOpen && <ResumeDialog open onClose={() => setResumeOpen(false)} />}
       </AnimatePresence>
     </>
   )
