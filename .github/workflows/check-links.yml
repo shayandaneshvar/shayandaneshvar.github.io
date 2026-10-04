@@ -1,0 +1,22 @@
+name: Check asset links
+
+# Catches a renamed or deleted file in files/, images/ or photo*.jpg that a page still
+# points at. Runs on every push, not just v2-source ones, because renaming an asset alone
+# is exactly the case that breaks links without triggering a rebuild.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Sources only. The committed v2/ bundle lags a source fix by one CI commit, so it is
+      # checked in deploy-v2 against a fresh build instead.
+      - run: node scripts/check-asset-links.mjs pages
