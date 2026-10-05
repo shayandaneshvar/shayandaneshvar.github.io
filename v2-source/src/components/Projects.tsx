@@ -1,118 +1,8 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef, useState } from 'react'
 import SectionHeading from './SectionHeading'
-
-const featured = [
-  {
-    title: 'Single Image Reflection Removal with Mamba/S6',
-    description:
-      'Replicated the best SOTA single image reflection removal model (DSRNet), created an image-based version of the Mamba/S6 state-space model, and replaced attention modules in DSRNet with Mamba modules. Also investigated cosine annealing LR scheduling and AdamW weight decay on the resulting Mamba-CNN network.',
-    tags: ['Python', 'PyTorch', 'Docker', 'OpenCV', 'Mamba/S6'],
-    year: '2024',
-    image: '/images/sirr_mamba.png',
-    github: 'https://github.com/shayandaneshvar/mamba-reflection',
-    course: 'Image-based Generative Methods in ML · A+',
-  },
-  {
-    title: 'GUI Element Detection using SOTA YOLO Models',
-    description:
-      'Benchmarked multiple YOLO variants on a GUI element detection dataset, investigating three novel research questions on mAP@.5 performance with IoU > 0.5. Published as an ArXiv preprint.',
-    tags: ['Python', 'PyTorch', 'TensorFlow', 'YOLOv8', 'YOLOv9'],
-    year: '2023',
-    image: '/images/gui-element-det-res.png',
-    github: 'https://github.com/shayandaneshvar/gui-element-detection',
-    external: 'https://arxiv.org/abs/2408.03507',
-    course: 'Data-driven Software Engineering · A+',
-  },
-  {
-    title: 'Brain Tumor Segmentation with 3D U-Net Variants',
-    description:
-      'Created, trained, and evaluated three 3D U-Net variants on the BraTS2020 dataset: Vanilla 3D U-Net, Residual 3D U-Net, and a 3D U-Net with a custom attention mechanism. Trained with both Dice and BCE+Dice losses. Also helped a colleague use the segmentation outputs to train an FCN for survival rate prediction.',
-    tags: ['Python', 'PyTorch', '3D U-Net', 'BraTS2020', 'Segmentation'],
-    year: '2023',
-    image: '/images/BraTS20.png',
-    github: 'https://github.com/shayandaneshvar/braTS-2020',
-    course: 'Deep Learning with CNNs · A+',
-  },
-]
-
-const others = [
-  {
-    title: 'Reflection Removal of In-vehicle Images',
-    description:
-      'BSc thesis. Synthesized a reflection dataset from CamVid road images, built a U-Net-style CNN with 3-channel output, and trained variants with different depths and kernel sizes to remove windshield reflections while preserving the scene behind.',
-    tags: ['Python', 'PyTorch', 'U-Net', 'Dataset Synthesis'],
-    year: '2022',
-    grade: '19.5/20',
-    image: '/images/bsc-thesis.jpg',
-    github: 'https://github.com/shayandaneshvar/Reflection-Removal-Project',
-  },
-  {
-    title: 'Dapixi: Photo Sharing Platform',
-    description:
-      'Microservices photo-sharing social network (similar to Instagram and Pinterest). Led backend design, development, and deployment. Over 12K lines of Java alongside recommender systems (categorical + collaborative filtering) in Python. Still running.',
-    tags: ['Java', 'Spring Cloud', 'Angular 10', 'MongoDB', 'Docker', 'OAuth2'],
-    year: '2020',
-    grade: '19.9/20',
-    image: '/images/dapixi.jpg',
-    external: 'https://dapixi.ir',
-  },
-  {
-    title: 'Face Registration, Morphing and Gesture Transfer',
-    description:
-      'Detected face landmarks with dlib, computed average faces, and registered faces using affine and similarity transforms. Computed PCA via SVD to find and animate the top 10 principal components. Transferred live webcam gestures to face models by solving a least squares problem.',
-    tags: ['Python', 'OpenCV', 'dlib', 'PCA', 'SVD'],
-    year: '2021',
-    grade: '19.9/20',
-    image: '/images/linearAlgebra-project.jpg',
-    github: 'https://github.com/shayandaneshvar/Face-Morphing-Project',
-  },
-  {
-    title: 'Soccer Player Detection, Classification and Visualization',
-    description:
-      "Detected players using KNN background subtraction and connected components. Trained a CNN on a custom dataset to classify players vs referees, reaching 98%+ accuracy at 10fps on a mid-range laptop. Mapped player positions to a bird's-eye field view using perspective transforms across three camera feeds.",
-    tags: ['Python', 'OpenCV', 'KNN', 'CNN'],
-    year: '2021',
-    grade: '20/20',
-    image: '/images/ComputerVisionCourseProject.jpg',
-    github: 'https://github.com/shayandaneshvar/ComputerVision-Final-Project',
-  },
-  {
-    title: 'Text Summarizer with Genetic Algorithm and NSGA-II',
-    description:
-      'Implemented Genetic Algorithm, Genetic Programming, and NSGA-II from scratch in Java (no optimization libraries). Applied to extractive text summarization optimizing for sentence diversity and relevance. Results were strong enough that the course instructor offered a RA position to publish it.',
-    tags: ['Java', 'NSGA-II', 'Genetic Algorithm', 'NLP'],
-    year: '2021',
-    github: 'https://github.com/shayandaneshvar/AI-project-2',
-  },
-  {
-    title: 'KBox: Cloud File Storage',
-    description:
-      'Full monolith web app built with Spring Framework, Spring Security, MongoDB GridFS, and Thymeleaf. Supported file upload, download, and sharing via email or link. Deployed and publicly available for over two months.',
-    tags: ['Java', 'Spring Boot', 'MongoDB', 'GridFS', 'Spring Security'],
-    year: '2021',
-    grade: '20/20',
-    image: '/images/kbox.jpg',
-    github: 'https://github.com/shayandaneshvar/KBox',
-  },
-  {
-    title: 'Chibaladi: E-Learning Platform',
-    description:
-      'Microservices e-learning platform with video courses and adaptive quizzing. Owned backend architecture, development, and deployment end-to-end. Completed Video, Auth, and Quiz services before the startup was cancelled for lack of funding.',
-    tags: ['Spring Cloud', 'React', 'Next.js', 'PostgreSQL', 'MongoDB', 'Docker'],
-    year: '2021',
-    external: 'https://web.archive.org/web/20211124123101/https://chibaladi.com/',
-  },
-  {
-    title: 'Huffman Text Compressor',
-    description:
-      'Implemented the Huffman compression algorithm and priority-queue tree data structure from scratch using Java Random Access File. Includes a GUI with drag-and-drop support and an optional file lock.',
-    tags: ['Java', 'Data Structures', 'Compression', 'GUI'],
-    year: '2019',
-    grade: '18.2/20',
-    github: 'https://github.com/shayandaneshvar/Huffman-Compressor',
-  },
-]
+import { featured, others, INITIAL_SHOW, HIDDEN_PROJECT_ANCHORS } from '../data/projects'
+import { peekPendingSection } from '../legacy-hash'
 
 function FolderIcon() {
   return (
@@ -138,12 +28,14 @@ function ExternalIcon() {
   )
 }
 
-const INITIAL_SHOW = 4
-
 export default function Projects() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-100px' })
-  const [showAll, setShowAll] = useState(false)
+  // A legacy link can point at a project in the collapsed tail; open the list for it.
+  const [showAll, setShowAll] = useState(() => {
+    const target = peekPendingSection()
+    return target !== null && HIDDEN_PROJECT_ANCHORS.includes(target)
+  })
   const visibleOthers = showAll ? others : others.slice(0, INITIAL_SHOW)
 
   return (
@@ -163,7 +55,8 @@ export default function Projects() {
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className={`relative grid md:grid-cols-12 gap-4 items-center ${i % 2 === 1 ? 'md:[direction:rtl]' : ''}`}
+              id={p.anchor}
+              className={`relative grid md:grid-cols-12 gap-4 items-center scroll-mt-24 ${i % 2 === 1 ? 'md:[direction:rtl]' : ''}`}
             >
               <div className={`md:col-span-7 relative group rounded overflow-hidden ${i % 2 === 1 ? 'md:[direction:ltr]' : ''}`}>
                 {p.image ? (
@@ -208,7 +101,8 @@ export default function Projects() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: i * 0.08 }}
               style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-              className="border rounded-lg p-6 flex flex-col hover:-translate-y-1 transition-all duration-300"
+              id={p.anchor}
+              className="border rounded-lg p-6 flex flex-col hover:-translate-y-1 transition-all duration-300 scroll-mt-24"
             >
               <div className="flex items-start justify-between mb-5">
                 <FolderIcon />
