@@ -44,7 +44,7 @@ export default function ResumeDialog({ open, onClose }: { open: boolean; onClose
           </button>
         </div>
         <p className="text-sm mb-5" style={{ color: 'var(--text)' }}>
-          One page, the short version aimed at engineering and research roles.
+          Two pages, the short version aimed at engineering and research roles.
         </p>
 
         <a
