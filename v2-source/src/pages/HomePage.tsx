@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Nav from '../components/Nav'
 import Hero from '../components/Hero'
 import About from '../components/About'
@@ -14,17 +14,20 @@ import { takePendingSection } from '../legacy-hash'
 
 export default function HomePage() {
   const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const section = (location.state as { scrollTo?: string } | null)?.scrollTo
-      ?? takePendingSection()
-    if (section) {
-      // Wait for the page to render before scrolling to the target section.
-      requestAnimationFrame(() => {
-        document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' })
-      })
-    }
-  }, [location.state])
+    const requested = (location.state as { scrollTo?: string } | null)?.scrollTo
+    const section = requested ?? takePendingSection()
+    if (!section) return
+    // Wait for the page to render before scrolling to the target section.
+    requestAnimationFrame(() => {
+      document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' })
+    })
+    // Router state lives in history, so it survives a reload and would scroll again on
+    // every refresh of this entry. It is a one-shot instruction, so drop it once used.
+    if (requested) navigate('.', { replace: true, state: null })
+  }, [location.state, navigate])
 
   return (
     <div className="relative">
