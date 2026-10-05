@@ -24,12 +24,12 @@ const wantPages = scope === 'all' || scope === 'pages'
 const wantBuild = scope === 'all' || scope === 'build'
 
 // Hand-edited pages, plus the v2 sources where these paths are written as literals.
-const SCAN = wantPages ? ['index.html', 'redirect.html', 'misc/index.html'] : []
+const SCAN = wantPages ? ['v1/index.html', 'redirect.html', 'misc/index.html'] : []
 const SCAN_DIRS = []
 if (wantPages) SCAN_DIRS.push({ dir: 'v2-source/src', ext: ['.ts', '.tsx'], recurse: true })
 // The built bundle is what Pages serves, so it gets checked too (after a build in CI).
 if (wantBuild) {
-  SCAN.push('v2/index.html')
+  SCAN.push('v2/index.html', 'index.html')   // the root copy of the v2 shell
   SCAN_DIRS.push({ dir: 'v2/assets', ext: ['.js', '.css'] })
 }
 

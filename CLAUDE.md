@@ -6,22 +6,29 @@ domain is set by the `CNAME` file (`shayandaneshvar.com`).
 
 There are two sites living in one repo:
 
-1. **v1 (legacy static page)** at the repo root. `index.html` is a single-file
-   Bootstrap "Plain-Academic" page. This is still what loads at
-   `https://shayandaneshvar.com/`. No build step, edit the HTML directly.
-2. **v2 (React app)** under `/v2/`. This is the actively developed portfolio and is
-   reachable at `https://shayandaneshvar.com/v2/`. Everything below is about v2.
+1. **v2 (React app)** is the live site. It is served at `https://shayandaneshvar.com/`
+   **and** at `/v2/`: Vite builds once with base `/v2/`, and `scripts/sync-root-index.mjs`
+   copies `v2/index.html` to the repo root, so both entry points load the same bundle
+   from `/v2/assets/`. Routing is hash based, so neither path needs a server rewrite.
+   Everything below is about v2.
+2. **v1 (legacy static page)** now lives at `/v1/` (`v1/index.html`), a single-file
+   Bootstrap "Plain-Academic" page. No build step, edit the HTML directly. Its asset
+   paths are absolute (`/images/...`, `/files/...`) because it is no longer at the root.
 
 ## Layout
 
 ```
-/                     v1 static site (index.html, images/, files/, favicon/, photo*.jpg)
+index.html            GENERATED copy of v2/index.html (do not hand-edit)
+v1/index.html         legacy static page, served at /v1/
+images/ files/        shared assets, referenced absolutely by both sites
+favicon/ photo*.jpg   shared assets
 CNAME                 custom domain (shayandaneshvar.com)
 redirect.html         standalone redirect to shayandaneshvar.com
 misc/                 misc static page
 v2-source/            v2 React source (edit here)
 v2/                   v2 BUILD OUTPUT, committed to the repo (do not hand-edit)
-.github/workflows/    deploy-v2.yml (CI build for v2)
+scripts/              sync-root-index.mjs, check-asset-links.mjs
+.github/workflows/    deploy-v2.yml (build + deploy), check-links.yml (asset links)
 ```
 
 ## v2 stack
@@ -65,12 +72,14 @@ regenerate the committed `v2/` output.
 ## How deployment works
 
 GitHub Pages publishes the `master` branch root. There is no separate `gh-pages`
-branch. Two things can update the live `/v2/` output:
+branch. `npm run build` regenerates `v2/` **and** the root `index.html` (via the sync
+script), so both are build output and both get committed. Two things can update the
+live site:
 
 1. **CI (the normal path).** `.github/workflows/deploy-v2.yml` runs on any push to
    `master` that touches `v2-source/**`. It runs `npm ci` and `npm run build` in
-   `v2-source/`, then commits the regenerated `v2/` directory back to `master` with the
-   message `chore: build v2` and pushes. After that push, GitHub Pages serves the new
+   `v2-source/`, checks asset links, then commits the regenerated `v2/` directory and the
+   root `index.html` back to `master` with the message `chore: build v2` and pushes. After that push, GitHub Pages serves the new
    build within a minute or two.
 2. **Manual build.** You can also run `npm run build` locally and commit the `v2/`
    output yourself.
@@ -92,5 +101,19 @@ Pick one of these to stay clean:
 
 ## Notes
 
-- v1 (`index.html`) and v2 are independent. Editing one does not affect the other.
+- v1 (`v1/index.html`) and v2 are independent. Editing one does not affect the other.
 - The resume PDF lives at `files/` and is linked from both v1 and v2.
+
+## Asset links
+
+`/files/...`, `/images/...` and `/photo*.jpg` are plain strings resolved at runtime, so a
+rename breaks them silently (this happened to the resume link). `scripts/check-asset-links.mjs`
+checks that every referenced asset exists:
+
+- `node scripts/check-asset-links.mjs pages` runs on every push (`check-links.yml`) over
+  `v1/index.html`, `misc/`, `redirect.html` and `v2-source/src`. Renaming an asset does not
+  touch `v2-source/`, so nothing else would catch it.
+- The deploy workflow runs the full check against freshly built output before committing.
+
+If you rename something in `files/` or `images/`, update `v1/index.html`, `misc/index.html`
+and `v2-source/src`, then rebuild v2.
