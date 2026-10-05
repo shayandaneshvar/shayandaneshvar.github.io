@@ -1,10 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
-// Both options point at the CV for now. When the one-page resume exists, drop it in
-// files/ and change RESUME_FILE; nothing else here needs to move.
 const CV_FILE = '/files/CV_ShayanDaneshvar.pdf'
-const RESUME_FILE = CV_FILE
+const RESUME_FILE = '/files/S_Shayan_Daneshvar_Resume.pdf'
 
 const options = [
   {
