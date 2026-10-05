@@ -37,7 +37,12 @@ export const posts: Post[] = [
   },
 ]
 
-export const upcoming = ['LLM Post-training Deep Dive', 'Training Dynamics & Loss Curves', 'vLLM Inference Internals']
+export const upcoming = [
+  'Modern Transformer Changes',
+  'Scaling Laws, Chinchilla and Beyond',
+  'Information and the Information Bottleneck',
+  'RL for LLMs',
+]
 
 export function getPost(slug: string): Post {
   const post = posts.find(p => p.slug === slug)
