@@ -4,16 +4,11 @@ import { HashRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
+import { resolveLegacyHash } from './legacy-hash.ts'
 
-// Ensure HashRouter always starts with a valid path.
-// If the URL has no hash (or just "#"), set it to "#/" so the "/" route matches.
-if (!window.location.hash || window.location.hash === '#') {
-  window.history.replaceState(
-    null,
-    '',
-    window.location.pathname + window.location.search + '#/'
-  )
-}
+// Normalize the hash before the router sees it: give HashRouter a valid path, and route
+// pre-move "#anchor" links to the right place (see legacy-hash.ts).
+resolveLegacyHash()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

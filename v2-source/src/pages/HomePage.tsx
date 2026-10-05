@@ -10,12 +10,14 @@ import Projects from '../components/Projects'
 import Blog from '../components/Blog'
 import Contact from '../components/Contact'
 import Footer from '../components/Footer'
+import { takePendingSection } from '../legacy-hash'
 
 export default function HomePage() {
   const location = useLocation()
 
   useEffect(() => {
     const section = (location.state as { scrollTo?: string } | null)?.scrollTo
+      ?? takePendingSection()
     if (section) {
       // Wait for the page to render before scrolling to the target section.
       requestAnimationFrame(() => {
