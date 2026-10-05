@@ -4,19 +4,6 @@ import { motion } from 'framer-motion'
 const CV_FILE = '/files/CV_ShayanDaneshvar.pdf'
 const RESUME_FILE = '/files/S_Shayan_Daneshvar_Resume.pdf'
 
-const options = [
-  {
-    label: 'Curriculum Vitae',
-    note: 'The long form: publications, research, education and projects.',
-    href: CV_FILE,
-  },
-  {
-    label: 'Resume',
-    note: 'The short form, aimed at industry roles.',
-    href: RESUME_FILE,
-  },
-]
-
 export default function ResumeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const firstRef = useRef<HTMLAnchorElement>(null)
 
@@ -48,7 +35,7 @@ export default function ResumeDialog({ open, onClose }: { open: boolean; onClose
       >
         <div className="flex items-start justify-between gap-4 mb-1">
           <h2 id="resume-dialog-title" className="text-lg font-semibold" style={{ color: 'var(--text-bright)' }}>
-            CV or resume?
+            Resume
           </h2>
           <button onClick={onClose} aria-label="Close"
             className="leading-none p-1 hover:opacity-70 transition-opacity"
@@ -57,25 +44,29 @@ export default function ResumeDialog({ open, onClose }: { open: boolean; onClose
           </button>
         </div>
         <p className="text-sm mb-5" style={{ color: 'var(--text)' }}>
-          Pick whichever is more useful. Both download as PDF.
+          One page, the short version aimed at engineering and research roles.
         </p>
 
-        <div className="space-y-3">
-          {options.map((o, i) => (
-            <a
-              key={o.label}
-              ref={i === 0 ? firstRef : undefined}
-              href={o.href}
-              download
-              onClick={onClose}
-              className="block rounded border px-4 py-3 transition-all duration-200 hover:-translate-y-0.5"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}
-            >
-              <span className="font-mono text-sm font-medium" style={{ color: 'var(--accent)' }}>{o.label}</span>
-              <span className="block text-sm mt-0.5" style={{ color: 'var(--text)' }}>{o.note}</span>
-            </a>
-          ))}
-        </div>
+        <a
+          ref={firstRef}
+          href={RESUME_FILE}
+          download
+          onClick={onClose}
+          className="block w-full text-center font-mono text-sm px-4 py-3 rounded border transition-all duration-200 hover:opacity-85 hover:-translate-y-0.5"
+          style={{ color: 'var(--bg)', backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }}
+        >
+          Download resume (PDF)
+        </a>
+
+        <p className="text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
+          After the academic record instead? The{' '}
+          <a href={CV_FILE} download onClick={onClose}
+            className="underline underline-offset-2 hover:opacity-80"
+            style={{ color: 'var(--text)' }}>
+            full CV
+          </a>{' '}
+          has the publications, research and education in full.
+        </p>
       </motion.div>
     </motion.div>
   )
