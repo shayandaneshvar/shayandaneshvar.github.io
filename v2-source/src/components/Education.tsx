@@ -2,6 +2,8 @@ import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import SectionHeading from './SectionHeading'
 
+// Everything here comes from the resume. No inferred coursework or paraphrased titles.
+// Sourced from the resume and LinkedIn. Nothing inferred.
 const degrees = [
   {
     degree: 'MSc in Computer Science',
@@ -11,22 +13,26 @@ const degrees = [
     gpa: '4.5 / 4.5',
     thesis: 'Exploring Representation-level Augmentation and RAG-based Vulnerability Augmentation with LLMs for Vulnerability Detection',
     highlights: [
-      'Published in TOSEM (Q1, IF 7.0) and EASE 2025 (CORE A)',
-      'Research covered LLM augmentation, RAG systems, state-space models, and YOLO-based object detection',
-      'Research assistantship throughout the program',
+      'Two first-author papers: ACM TOSEM (Q1) and EASE 2025 (CORE A)',
+      'Graduate research assistant in machine learning for software engineering, supervised by Dr. Shaowei Wang',
+      'TA for Computational Intelligence and Software Engineering 2; grader for Machine Learning, Software Engineering 1 and Project Management',
+      'Reviewer for ACM TOSEM (2026 to present) and ICSE 2026 Shadow Program Committee',
+      'Graduate Fellowship, Research Completion Award and International Graduate Entrance Scholarship',
     ],
   },
   {
     degree: 'BSc in Computer Engineering',
-    focus: 'AI and Software Engineering',
+    focus: 'Software Engineering and Applied AI',
     school: 'K.N. Toosi University of Technology',
     location: 'Tehran, Iran',
-    gpa: '4.0 / 4.0',
+    gpa: '19.21 / 20 (4.0 / 4.0)',
     thesis: 'Reflection Removal of In-vehicle Images with UNets (19.5/20)',
     highlights: [
-      'Built production full-stack systems including a microservice social network and a cloud storage platform',
-      'Coursework in computer vision, NLP, and optimization',
-      'Strong algorithmic foundations: data structures, OS, compilers, computer networks',
+      'Ranked 1st of 76 in the program',
+      'Undergraduate research assistant in computer vision and machine learning, supervised by Dr. Behrooz Nasihatkon',
+      'Head TA for Advanced Programming with Java, Operating Systems, and Design and Analysis of Algorithms; TA for Database Design',
+      'Computer engineering in Iran covers the computer science curriculum plus mandatory electrical engineering and electronics courses (140 credits)',
+      'Ranked 1,427th of 144,437 (top 1%) in the national university entrance exam',
     ],
   },
 ]
@@ -59,7 +65,7 @@ export default function Education() {
                   <h3 className="text-lg font-semibold transition-colors" style={{ color: 'var(--text-bright)' }}>
                     {d.degree}
                   </h3>
-                  <p className="font-mono text-sm" style={{ color: 'var(--accent)' }}>{d.focus}</p>
+                  {d.focus && <p className="font-mono text-sm" style={{ color: 'var(--accent)' }}>{d.focus}</p>}
                   <p className="text-sm mt-1" style={{ color: 'var(--text)' }}>
                     {d.school} · {d.location}
                   </p>
