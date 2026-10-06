@@ -2,13 +2,20 @@ import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import SectionHeading from './SectionHeading'
 
-const skills = [
-  'Python', 'Java', 'PyTorch', 'Transformers',
+// Two columns, read top to bottom rather than across: ML and LLM work on the left,
+// software engineering on the right. Keep them the same length.
+const mlSkills = [
+  'Python', 'PyTorch', 'Transformers',
+  'LangChain', 'LangGraph',
   'vLLM', 'LLaMA-Factory', 'Megatron-LM',
-  'LangChain', 'LangGraph', 'Harbor', 'G-Eval',
-  'Claude Code', 'Codex',
+  'Harbor', 'G-Eval', 'Claude Code', 'Codex',
+]
+
+const engSkills = [
+  'Java', 'Spring Boot', 'Microservices',
   'Docker', 'Kubernetes', 'Apache Kafka',
-  'AWS EC2', 'Spring Framework', 'MongoDB', 'Postgres'
+  'CI/CD', 'AWS', 'Scrum/Agile',
+  'Postgres', 'MongoDB', 'SQL',
 ]
 
 const photos = ['/photo4.jpg','/photo2.jpg', '/photo3.jpg','/photo5.jpg','/photo1.jpg']
@@ -62,14 +69,18 @@ export default function About() {
             </p>
 
             <p style={{ color: 'var(--text-bright)' }} className="font-medium mt-6">Technologies I work with:</p>
-            <ul className="grid grid-cols-2 gap-2 mt-2">
-              {skills.map(skill => (
-                <li key={skill} className="font-mono text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
-                  <span style={{ color: 'var(--accent)' }}>▹</span>
-                  {skill}
-                </li>
+            <div className="grid grid-cols-2 gap-x-6 mt-2">
+              {[mlSkills, engSkills].map((column, i) => (
+                <ul key={i} className="space-y-2">
+                  {column.map(skill => (
+                    <li key={skill} className="font-mono text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                      <span style={{ color: 'var(--accent)' }}>▹</span>
+                      {skill}
+                    </li>
+                  ))}
+                </ul>
               ))}
-            </ul>
+            </div>
           </div>
 
           <div className="relative group mx-auto md:mx-0 w-64 h-64 md:w-full md:h-auto md:aspect-square max-w-xs">
