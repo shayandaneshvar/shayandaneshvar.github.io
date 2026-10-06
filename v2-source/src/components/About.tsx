@@ -3,11 +3,12 @@ import { useRef, useState, useEffect } from 'react'
 import SectionHeading from './SectionHeading'
 
 const skills = [
-  'Python', 'PyTorch', 'Transformers', 'vLLM',
-  'LLaMA-Factory', 'Megatron-LM', 'verl', 'Ray',
-  'LangChain', 'LangGraph', 'Claude Code', 'Codex',
+  'Python', 'Java', 'PyTorch', 'Transformers',
+  'vLLM', 'LLaMA-Factory', 'Megatron-LM',
+  'LangChain', 'LangGraph', 'Harbor', 'G-Eval',
+  'Claude Code', 'Codex',
   'Docker', 'Kubernetes', 'Apache Kafka',
-  'AWS EC2', 'Java', 'Spring Framework', 'MongoDB', 'Postgres'
+  'AWS EC2', 'Spring Framework', 'MongoDB', 'Postgres'
 ]
 
 const photos = ['/photo4.jpg','/photo2.jpg', '/photo3.jpg','/photo5.jpg','/photo1.jpg']
