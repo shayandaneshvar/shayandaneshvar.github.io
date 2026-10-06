@@ -77,10 +77,13 @@ export default function Hero() {
       </motion.div>
 
       <motion.p {...fadeUp(0.4)} style={{ color: 'var(--text)' }} className="max-w-xl mt-6 text-lg leading-relaxed">
-        I train reasoning models, build production ML systems, and publish research at the
-        intersection of software engineering and large language models. Currently at{' '}
-        <span style={{ color: 'var(--text-bright)' }}>Huawei Technologies</span>, post-training
-        Code LLMs on multi-node GPU clusters.
+        I post-train LLMs for agentic coding at{' '}
+        <span style={{ color: 'var(--text-bright)' }}>Huawei Technologies</span>: verifiable SWE
+        environments, rejection-sampled distillation and SFT for dense and MoE models across
+        multi-node GPU and NPU clusters. I came to ML from production software engineering,
+        building Java and Spring microservices, and I still publish, with first-author papers in{' '}
+        <span style={{ color: 'var(--accent)' }}>ACM TOSEM</span> and{' '}
+        <span style={{ color: 'var(--accent)' }}>EASE</span>.
       </motion.p>
 
       <motion.div {...fadeUp(0.5)} className="flex gap-4 mt-10 flex-wrap">
