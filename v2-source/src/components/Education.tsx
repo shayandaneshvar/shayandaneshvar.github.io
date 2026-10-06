@@ -9,7 +9,7 @@ const degrees = [
     school: 'University of Manitoba',
     location: 'Winnipeg, Canada',
     gpa: '4.5 / 4.5',
-    thesis: 'Representation-level Augmentation and RAG-enhanced Vulnerability Augmentation with LLMs for Vulnerability Detection',
+    thesis: 'Exploring Representation-level Augmentation and RAG-based Vulnerability Augmentation with LLMs for Vulnerability Detection',
     highlights: [
       'Published in TOSEM (Q1, IF 7.0) and EASE 2025 (CORE A)',
       'Research covered LLM augmentation, RAG systems, state-space models, and YOLO-based object detection',
@@ -22,7 +22,7 @@ const degrees = [
     school: 'K.N. Toosi University of Technology',
     location: 'Tehran, Iran',
     gpa: '4.0 / 4.0',
-    thesis: 'Reflection Removal of In-vehicle Images using CNN-based U-Net Architecture (19.5/20)',
+    thesis: 'Reflection Removal of In-vehicle Images with UNets (19.5/20)',
     highlights: [
       'Built production full-stack systems including a microservice social network and a cloud storage platform',
       'Coursework in computer vision, NLP, and optimization',
