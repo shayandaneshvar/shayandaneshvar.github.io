@@ -7,10 +7,10 @@ const pubs = [
     title: 'VulScribeR: Exploring RAG-based Vulnerability Augmentation with LLMs',
     venue: 'ACM Transactions on Software Engineering and Methodology (TOSEM)',
     badge: 'Q1 · IF 7.0',
-    year: '2025',
+    year: '2026',
     authors: 'Seyed Shayan Daneshvar, Yu Nong, Xu Yang, Shaowei Wang, Haipeng Cai',
     doi: 'https://dl.acm.org/doi/abs/10.1145/3760775',
-    tags: ['LLM', 'RAG', 'Vulnerability Detection', 'Data Augmentation'],
+    tags: ['LLM', 'RAG', 'Transformers', 'GNNs', 'Vulnerability Detection', 'Data Augmentation'],
   },
   {
     title: 'A Study on Mixup-inspired Augmentation Methods for Software Vulnerability Detection',
@@ -19,7 +19,7 @@ const pubs = [
     year: '2025',
     authors: 'Seyed Shayan Daneshvar, Da Tan, Shaowei Wang, Carson Leung',
     doi: 'https://dl.acm.org/doi/full/10.1145/3756681.3757017',
-    tags: ['Mixup', 'Augmentation', 'Vulnerability Detection', 'ML4SE'],
+    tags: ['Mixup', 'Augmentation', 'Deep Learning', 'Vulnerability Detection', 'ML4SE'],
   },
   {
     title: 'GUI Element Detection Using SOTA YOLO Deep Learning Models',
@@ -37,7 +37,7 @@ const pubs = [
     year: '2024',
     authors: 'Neda Rezaei, Seyed Shayan Daneshvar, Behrooz Nasihatkon, Shahram Seidi, Maryam Rezazadeh',
     doi: 'https://www.sciencedirect.com/science/article/abs/pii/S0026265X23013218',
-    tags: ['Computer Vision', 'RGB Analysis', 'Android', 'VGG', 'Barcode Detection', 'Outlier Detection', 'Linear Regression'],
+    tags: ['Computer Vision', 'Android', 'VGG', 'Barcode Detection', 'Outlier Detection', 'Linear Regression'],
   },
 ]
 
