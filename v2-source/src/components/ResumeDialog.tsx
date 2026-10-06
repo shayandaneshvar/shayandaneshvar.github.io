@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
-const CV_FILE = '/files/CV_ShayanDaneshvar.pdf'
-const RESUME_FILE = '/files/S_Shayan_Daneshvar_Resume.pdf'
+import { CV_FILE, RESUME_FILE } from '../data/documents'
 
 export default function ResumeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const firstRef = useRef<HTMLAnchorElement>(null)

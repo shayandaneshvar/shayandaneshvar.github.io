@@ -1,6 +1,7 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import SectionHeading from './SectionHeading'
+import { RESUME_FILE } from '../data/documents'
 
 export default function Contact() {
   const ref = useRef(null)
@@ -19,17 +20,28 @@ export default function Contact() {
         <h2 className="text-4xl md:text-5xl font-bold mb-5" style={{ color: 'var(--text-bright)' }}>Say Hello.</h2>
         <p className="max-w-lg mx-auto leading-relaxed mb-10" style={{ color: 'var(--text)' }}>
           I'm open to interesting research collaborations, engineering roles, and conversations
-          about LLMs, computer vision, or anything at the intersection of the two.
-          My inbox is always open.
+          about LLMs, agentic AI, distributed software engineering, computer vision, or anything
+          at the intersection of them. My inbox is always open.
         </p>
 
-        <a
-          href="mailto:daneshvarshayan@gmail.com"
-          style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
-          className="font-mono border px-10 py-4 rounded text-sm hover:opacity-80 transition-all duration-300 hover:-translate-y-0.5 inline-block"
-        >
-          Say Hello
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="mailto:daneshvarshayan@gmail.com"
+            style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
+            className="font-mono border px-10 py-4 rounded text-sm hover:opacity-80 transition-all duration-300 hover:-translate-y-0.5"
+          >
+            Say Hello
+          </a>
+          {/* Straight to the file here: the nav button opens the chooser, this one does not. */}
+          <a
+            href={RESUME_FILE}
+            download
+            style={{ color: 'var(--text)', borderColor: 'var(--border)' }}
+            className="font-mono border px-10 py-4 rounded text-sm hover:opacity-80 transition-all duration-300 hover:-translate-y-0.5"
+          >
+            Download Resume
+          </a>
+        </div>
       </motion.div>
     </section>
   )
